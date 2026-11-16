@@ -1,0 +1,415 @@
+{
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "wan_animate_2_distill_int8_convrot.safetensors",
+   "weight_dtype": "default"
+  },
+  "_meta": {
+   "title": "主模型（Wan Animate 2 蒸餾版）"
+  }
+ },
+ "2": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+   "type": "wan",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "文字模型（umt5）"
+  }
+ },
+ "3": {
+  "class_type": "CLIPVisionLoader",
+  "inputs": {
+   "clip_name": "clip_vision_h.safetensors"
+  },
+  "_meta": {
+   "title": "CLIP Vision"
+  }
+ },
+ "4": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "Wan2_1_VAE_bf16.safetensors"
+  },
+  "_meta": {
+   "title": "VAE"
+  }
+ },
+ "10": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "🐶 主角照片"
+  }
+ },
+ "11": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "example.mp4"
+  },
+  "_meta": {
+   "title": "🎬 動作影片"
+  }
+ },
+ "12": {
+  "class_type": "Video Slice",
+  "inputs": {
+   "video": [
+    "11",
+    0
+   ],
+   "start_time": 0.0,
+   "duration": 5.0,
+   "strict_duration": false
+  },
+  "_meta": {
+   "title": "影片範圍"
+  }
+ },
+ "13": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "12",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "GetVideoComponents"
+  }
+ },
+ "14": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "13",
+    0
+   ],
+   "batch_index": 0,
+   "length": 1
+  },
+  "_meta": {
+   "title": "動作影片第一格"
+  }
+ },
+ "15": {
+  "class_type": "CLIPVisionEncode",
+  "inputs": {
+   "clip_vision": [
+    "3",
+    0
+   ],
+   "image": [
+    "10",
+    0
+   ],
+   "crop": "none"
+  },
+  "_meta": {
+   "title": "CLIPVisionEncode 主角"
+  }
+ },
+ "16": {
+  "class_type": "CLIPVisionEncode",
+  "inputs": {
+   "clip_vision": [
+    "3",
+    0
+   ],
+   "image": [
+    "14",
+    0
+   ],
+   "crop": "none"
+  },
+  "_meta": {
+   "title": "CLIPVisionEncode 動作"
+  }
+ },
+ "20": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "Character appearance description: the dog in the reference photo, same fur color and markings, standing on its hind legs, realistic photo, sharp details.\nBackground description: a bright modern home kitchen with light grey cabinets, pendant lights and dining chairs, warm evening light.",
+   "clip": [
+    "2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "提示詞（主角長相＋背景，不要寫動作）"
+  }
+ },
+ "21": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走",
+   "clip": [
+    "2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "負面提示詞"
+  }
+ },
+ "22": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "a dog standing on its hind legs, dancing and waving its front paws at the camera",
+   "clip": [
+    "2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "動作描述"
+  }
+ },
+ "30": {
+  "class_type": "WanAnimate2Cache",
+  "inputs": {
+   "model": [
+    "1",
+    0
+   ],
+   "device": "cpu",
+   "dtype": "int8"
+  },
+  "_meta": {
+   "title": "WanAnimate2Cache"
+  }
+ },
+ "31": {
+  "class_type": "ModelSamplingSD3",
+  "inputs": {
+   "model": [
+    "30",
+    0
+   ],
+   "shift": 5.0
+  },
+  "_meta": {
+   "title": "ModelSamplingSD3"
+  }
+ },
+ "32": {
+  "class_type": "BasicScheduler",
+  "inputs": {
+   "model": [
+    "30",
+    0
+   ],
+   "scheduler": "simple",
+   "steps": 10,
+   "denoise": 1.0
+  },
+  "_meta": {
+   "title": "步數"
+  }
+ },
+ "33": {
+  "class_type": "KSamplerSelect",
+  "inputs": {
+   "sampler_name": "lcm"
+  },
+  "_meta": {
+   "title": "取樣器"
+  }
+ },
+ "40": {
+  "class_type": "WanAnimate2ToVideo",
+  "inputs": {
+   "positive": [
+    "20",
+    0
+   ],
+   "negative": [
+    "21",
+    0
+   ],
+   "vae": [
+    "4",
+    0
+   ],
+   "width": 480,
+   "height": 848,
+   "length": 81,
+   "batch_size": 1,
+   "reference_image": [
+    "10",
+    0
+   ],
+   "pose_video": [
+    "13",
+    0
+   ],
+   "clip_vision_output": [
+    "15",
+    0
+   ],
+   "positive_pose": [
+    "22",
+    0
+   ],
+   "clip_vision_output_pose": [
+    "16",
+    0
+   ],
+   "video_frame_offset": 0,
+   "pose_strength": 1.0,
+   "pose_start_percent": 0.0,
+   "pose_end_percent": 1.0,
+   "reference_image_strength": 1.0
+  },
+  "_meta": {
+   "title": "輸出"
+  }
+ },
+ "41": {
+  "class_type": "SamplerCustom",
+  "inputs": {
+   "model": [
+    "31",
+    0
+   ],
+   "add_noise": true,
+   "noise_seed": 1,
+   "cfg": 1.0,
+   "positive": [
+    "40",
+    0
+   ],
+   "negative": [
+    "40",
+    1
+   ],
+   "sampler": [
+    "33",
+    0
+   ],
+   "sigmas": [
+    "32",
+    0
+   ],
+   "latent_image": [
+    "40",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "SamplerCustom"
+  }
+ },
+ "42": {
+  "class_type": "TrimVideoLatent",
+  "inputs": {
+   "samples": [
+    "41",
+    0
+   ],
+   "trim_amount": [
+    "40",
+    3
+   ]
+  },
+  "_meta": {
+   "title": "TrimVideoLatent"
+  }
+ },
+ "43": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "42",
+    0
+   ],
+   "vae": [
+    "4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "VAEDecode"
+  }
+ },
+ "44": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "43",
+    0
+   ],
+   "batch_index": [
+    "40",
+    4
+   ],
+   "length": 4096
+  },
+  "_meta": {
+   "title": "去掉和上一段重複的一格"
+  }
+ },
+ "45": {
+  "class_type": "ImageFromBatch",
+  "inputs": {
+   "image": [
+    "43",
+    0
+   ],
+   "batch_index": -1,
+   "length": 1
+  },
+  "_meta": {
+   "title": "這一段最後一格"
+  }
+ },
+ "46": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "45",
+    0
+   ],
+   "filename_prefix": "ComfyRemote/anim_last"
+  },
+  "_meta": {
+   "title": "接續用（最後一格）"
+  }
+ },
+ "47": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "44",
+    0
+   ],
+   "fps": [
+    "13",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "CreateVideo"
+  }
+ },
+ "48": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "47",
+    0
+   ],
+   "filename_prefix": "ComfyRemote/anim",
+   "format": "auto",
+   "format.codec": "auto"
+  },
+  "_meta": {
+   "title": "SaveVideo"
+  }
+ }
+}

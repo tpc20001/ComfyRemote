@@ -1,0 +1,9 @@
+# 不放進 GitHub：打包出來的檔、快取、執行時的資料
+out/
+work/
+__pycache__/
+*.pyc
+Data/
+LOG/
+UPDATE/
+app_backup/

@@ -1,0 +1,9 @@
+{
+ "id": "ComfyRemote",
+ "name": "ComfyRemote",
+ "title": "ComfyUI 手機遙控",
+ "prefix": "CR",
+ "web_port": 8761,
+ "accent": "#8b5cf6",
+ "phone_id": "comfyremote-phone"
+}

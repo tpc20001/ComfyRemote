@@ -1,0 +1,295 @@
+{
+ "1": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "QW2511\\qwen_image_edit_2511_fp8mixed.safetensors",
+   "weight_dtype": "fp8_e4m3fn"
+  },
+  "_meta": {
+   "title": "主模型（Qwen Image Edit 2511）"
+  }
+ },
+ "2": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "Qwen\\qwen_image_vae.safetensors"
+  },
+  "_meta": {
+   "title": "VAE"
+  }
+ },
+ "3": {
+  "class_type": "CLIPLoader",
+  "inputs": {
+   "clip_name": "Qwen\\qwen_2.5_vl_7b_fp8_scaled.safetensors",
+   "type": "qwen_image",
+   "device": "default"
+  },
+  "_meta": {
+   "title": "文字模型（Qwen2.5-VL）"
+  }
+ },
+ "4": {
+  "class_type": "LoraLoaderModelOnly",
+  "inputs": {
+   "lora_name": "Qwen2511\\Qwen-Image-Lightning-4steps-V2.0-bf16.safetensors",
+   "strength_model": 1,
+   "model": [
+    "1",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Lightning 4 步"
+  }
+ },
+ "9": {
+  "class_type": "CFGNorm",
+  "inputs": {
+   "strength": 1,
+   "pre_cfg": false,
+   "model": [
+    "4",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "CFGNorm"
+  }
+ },
+ "111": {
+  "class_type": "ReservedVRAMSetter",
+  "inputs": {
+   "reserved": 1.5,
+   "mode": "manual",
+   "seed": 0,
+   "auto_max_reserved": 0,
+   "clean_gpu_before": true,
+   "anything": [
+    "9",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ReservedVRAMSetter"
+  }
+ },
+ "175": {
+  "class_type": "VRAMCleanup",
+  "inputs": {
+   "offload_model": true,
+   "offload_cache": true,
+   "anything": [
+    "3",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "VRAMCleanup"
+  }
+ },
+ "21": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "圖一：場景"
+  }
+ },
+ "22": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "example.png"
+  },
+  "_meta": {
+   "title": "圖二：人物"
+  }
+ },
+ "15": {
+  "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+  "inputs": {
+   "aspect_ratio": "original",
+   "proportional_width": 1,
+   "proportional_height": 1,
+   "fit": "crop",
+   "method": "lanczos",
+   "round_to_multiple": "8",
+   "scale_to_side": "longest",
+   "scale_to_length": 960,
+   "background_color": "#000000",
+   "image": [
+    "21",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "圖一縮放"
+  }
+ },
+ "16": {
+  "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+  "inputs": {
+   "aspect_ratio": "original",
+   "proportional_width": 1,
+   "proportional_height": 1,
+   "fit": "crop",
+   "method": "lanczos",
+   "round_to_multiple": "8",
+   "scale_to_side": "longest",
+   "scale_to_length": 960,
+   "background_color": "#000000",
+   "image": [
+    "22",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "圖二縮放"
+  }
+ },
+ "5": {
+  "class_type": "TextEncodeQwenImageEditPlus",
+  "inputs": {
+   "prompt": "讓圖2的人坐在圖1的場景裡，手上拿著咖啡杯在喝咖啡，光線和圖1一致，自然融合",
+   "clip": [
+    "175",
+    0
+   ],
+   "vae": [
+    "2",
+    0
+   ],
+   "image1": [
+    "15",
+    0
+   ],
+   "image2": [
+    "16",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "提示詞（圖1＝場景、圖2＝人物）"
+  }
+ },
+ "6": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "15",
+    0
+   ],
+   "vae": [
+    "2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "VAEEncode"
+  }
+ },
+ "8": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "5",
+    0
+   ],
+   "latent": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ReferenceLatent"
+  }
+ },
+ "17": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "5",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ConditioningZeroOut"
+  }
+ },
+ "7": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "17",
+    0
+   ],
+   "latent": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ReferenceLatent"
+  }
+ },
+ "10": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 1,
+   "steps": 4,
+   "cfg": 1,
+   "sampler_name": "euler_ancestral",
+   "scheduler": "sgm_uniform",
+   "denoise": 1,
+   "model": [
+    "111",
+    0
+   ],
+   "positive": [
+    "8",
+    0
+   ],
+   "negative": [
+    "7",
+    0
+   ],
+   "latent_image": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "KSampler"
+  }
+ },
+ "11": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "10",
+    0
+   ],
+   "vae": [
+    "2",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "VAEDecode"
+  }
+ },
+ "131": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "filename_prefix": "ComfyRemote_merge",
+   "images": [
+    "11",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "SaveImage"
+  }
+ }
+}
