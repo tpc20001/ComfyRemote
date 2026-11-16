@@ -56,7 +56,7 @@ def apply_updates():
     """Apply every UPDATE\\*.zip in version order. Returns backup path of the first applied update."""
     if not UPDATE_DIR.exists():
         return None, []
-    zips = sorted(UPDATE_DIR.glob("*.zip"), key=lambda p: vkey(p.stem))
+    zips = sorted([z for z in UPDATE_DIR.glob("*.zip") if "_Shell_L" not in z.name], key=lambda p: vkey(p.stem))   # EXE 外殼不是程式更新包
     first_backup = None; applied = []
     for z in zips:
         backup = None
@@ -102,7 +102,10 @@ def apply_updates():
             if backup is not None and backup.exists():
                 try: restore(backup); log(f"RESTORED {backup} after failed {z.name}")
                 except Exception as e2: log(f"RESTORE FAILED: {e2}")
-            msgbox(f"套用更新 {z.name} 失敗：\n{e}\n\n程式維持原版本。", error=True)
+            try:                                                               # 套用失敗的移到 UPDATE\\failed（不會每次開程式都跳一樣的錯）
+                bad = UPDATE_DIR / "failed"; bad.mkdir(exist_ok=True); os.replace(z, bad / z.name)
+            except Exception: pass
+            msgbox(f"套用更新 {z.name} 失敗：\n{e}\n\n程式維持原版本（這個檔移到 UPDATE\\failed）。", error=True)
     # keep only the 5 newest backups
     try:
         olds = sorted(BACKUP_DIR.iterdir(), key=lambda p: p.name)[:-5]

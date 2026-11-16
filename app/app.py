@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.36'
+APP_VERSION = '0.3.37'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -2295,7 +2295,7 @@ class Main(QMainWindow):
         d = ROOT / 'UPDATE'; seen = set(self._upd_seen); cache = self.__dict__.setdefault('_pkg_cache', {})
         def look():
             new_seen = []
-            try: Z = sorted(d.glob('*.zip'), key=lambda p: vkey(p.stem))
+            try: Z = sorted([z for z in d.glob('*.zip') if '_Shell_L' not in z.name], key=lambda p: vkey(p.stem))   # V0.3.37 EXE 外殼不是程式更新包
             except Exception: Z = []
             for z in reversed(Z):
                 if str(z) in seen: continue
@@ -2332,6 +2332,10 @@ class Main(QMainWindow):
             return out
         cloudupd.bind(eng=ENG, ver=APP_VERSION, brand=BRAND, busy=busy, notify=lambda m: ui(lambda m=m: self._cloud_bar(m)),
                       apply_zip=lambda p: ui(lambda p=p: self._cloud_apply(p)), swap=lambda z: ui(lambda z=z: self._cloud_swap(z)))
+        try:                                                                    # V0.3.37 V0.3.36 把 EXE 外殼放在 UPDATE → 啟動器每次開都說「套用失敗」：移到 Data\\cloud
+            for z in (ROOT / 'UPDATE').glob('*_Shell_L*.zip'):
+                (ENG.data / 'cloud').mkdir(parents=True, exist_ok=True); os.replace(str(z), str(ENG.data / 'cloud' / z.name)); upd_log(f'把 UPDATE 裡的 {z.name} 移到 Data\\cloud（它是 EXE 外殼，不是程式更新包）')
+        except Exception: pass
         try: cloudupd.shell_ok_later(ROOT, BRAND['id'] + '.exe'); cloudupd.loop_start()
         except Exception: ENG.log.err('雲端更新：啟動')
 

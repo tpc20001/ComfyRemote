@@ -164,7 +164,7 @@ def t_cloud():
             for _ in range(100):
                 if 'swap' in got: break
                 time.sleep(0.05)
-            assert got['swap'].endswith('CR_Shell_L2.zip') and (d / 'UPDATE' / 'CR_V9.9.99.zip').exists()   # 程式也較新：一起放進 UPDATE
+            assert got['swap'].endswith('CR_Shell_L2.zip') and pathlib.Path(got['swap']).parent == E.data / 'cloud' and not list((d / 'UPDATE').glob('*_Shell_L*')) and (d / 'UPDATE' / 'CR_V9.9.99.zip').exists()   # 程式也較新：一起放進 UPDATE
         finally: del sys.frozen
         bat = cloudupd.write_bat(d, d / 'UPDATE' / 'CR_Shell_L2.zip', 1234, 'ComfyRemote.exe').read_bytes().decode('utf-8')
         assert 'PID eq 1234' in bat and 'ComfyRemote.exe.old' in bat and ':restore' in bat and 'shell_ok.flag' in bat and '\r\n' in bat

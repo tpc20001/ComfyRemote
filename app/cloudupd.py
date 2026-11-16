@@ -232,9 +232,10 @@ def update(force=False):
     def run_():
         try:
             if R['need_shell']:
+                # V0.3.37 EXE 外殼不能放 UPDATE（舊啟動器會把 UPDATE 裡每個 zip 都當程式更新包 →「update package has no app/ files」）→ 放 Data\\cloud
                 if R['newer_code']:                                              # 程式也有新的：放進 UPDATE，新 EXE 開起來時由啟動器套用
                     download(info['zip'], root / 'UPDATE' / f"{prefix}_V{info['version']}.zip", info.get('zip_sha256'), info.get('zip_size'), f"程式 V{info['version']}")
-                sz = download(info['shell'], root / 'UPDATE' / f"{prefix}_Shell_L{info.get('launcher')}.zip", info.get('shell_sha256'), info.get('shell_size'), f"EXE 第 {info.get('launcher')} 版")
+                sz = download(info['shell'], Path(E.data) / 'cloud' / f"{prefix}_Shell_L{info.get('launcher')}.zip", info.get('shell_sha256'), info.get('shell_size'), f"EXE 第 {info.get('launcher')} 版")
                 _S['msg'] = '下載好了，準備換 EXE（程式會關掉再自動打開）'; log(f"EXE 第 {info.get('launcher')} 版下載好了（SHA-256 對過），準備換 EXE")
                 C('swap')(str(sz))
             else:
@@ -352,8 +353,10 @@ exit /b 1
 
 
 def run_bat(bat):
-    """開一個不擋住程式的 BAT（程式關掉它還繼續跑）."""
-    if IS_WIN: subprocess.Popen(['cmd', '/c', str(bat)], creationflags=0x00000008 | 0x00000200 | 0x08000000, close_fds=True)   # DETACHED | NEW_GROUP | NO_WINDOW
+    """開一個不擋住程式的 BAT（程式關掉它還繼續跑）；V0.3.37 開一個縮小的視窗，看得到它在做什麼（換好會自己關）."""
+    if not IS_WIN: return
+    si = subprocess.STARTUPINFO(); si.dwFlags |= 1; si.wShowWindow = 7                      # STARTF_USESHOWWINDOW、SW_SHOWMINNOACTIVE（縮小、不搶焦點）
+    subprocess.Popen(['cmd', '/c', str(bat)], creationflags=0x00000010 | 0x00000200, startupinfo=si, close_fds=True)   # NEW_CONSOLE | NEW_GROUP
 
 
 def shell_ok_later(root, exe, delay=20):

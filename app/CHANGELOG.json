@@ -1,5 +1,13 @@
 [
  {
+  "version": "0.3.37",
+  "date": "2026-11-17",
+  "items": [
+   "修正：換 EXE 時把 EXE 外殼（CR_Shell_L2.zip）放在 UPDATE 資料夾，啟動器把它當成程式更新包，跳出「update package has no app/ files」；改放 Data\\cloud，打開程式時也會把 UPDATE 裡留下的外殼移走；啟動器遇到套用失敗的更新包會移到 UPDATE\\failed，不會每次開都跳",
+   "換 EXE 時開一個縮小的視窗（工作列看得到「ComfyRemote 換 EXE」），看得到它在做什麼，換好會自己關"
+  ]
+ },
+ {
   "version": "0.3.36",
   "date": "2026-11-17",
   "items": [
