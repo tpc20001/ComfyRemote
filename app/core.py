@@ -1992,6 +1992,36 @@ class Engine:
         if J: J['cancel'] = True; self.log.w(f'生圖：#{jid} 取消（中斷 ComfyUI）'); return True
         return False
 
+    def gen_cancel_many(self, batch=0, run=False):
+        """V0.3.39 ⏹ 批量取消：batch＝只取消這一批（同一次送出的），0＝全部；run＝連正在跑的也中斷。一次改完（幾百個也很快）."""
+        b = int(batch or 0); n = 0
+        with self.lock:
+            Q = list(self.gen_q)
+            if b:
+                bs = {r[0] for r in self.db.q(f'SELECT id FROM gen_jobs WHERE batch=? OR id=?', (b, b))}
+                Q = [j for j in Q if j in bs]
+            for j in Q: self.gen_q.remove(j)
+            for i in range(0, len(Q), 500):
+                part = Q[i:i + 500]; self.db.x(f"UPDATE gen_jobs SET state='stop', msg='已取消（批量）' WHERE id IN ({','.join('?' * len(part))})", part)
+            n = len(Q)
+        k = 0
+        if run:
+            for jid, J in list(self.gen_active.items()):
+                if not b or int(J.get('batch') or 0) == b or jid == b: J['cancel'] = True; k += 1
+        if n or k: self.log.w(f'生圖：批量取消 {n} 個排隊' + (f'、中斷 {k} 個正在跑' if k else '') + (f'（第 #{b} 批）' if b else '（全部）'))
+        return {'ok': True, 'n': n, 'run': k, 'message': f'⏹ 取消了 {n} 個排隊' + (f'，正在跑的 {k} 個也中斷' if k else '')}
+
+    def gen_qsum(self):
+        """排隊總數、每一批還有幾個在排（手機的「取消這一批」用）."""
+        with self.lock: Q = list(self.gen_q)
+        if not Q: return {'n': 0, 'b': {}}
+        B = {}
+        for i in range(0, len(Q), 500):
+            part = Q[i:i + 500]
+            for jid, bt in self.db.q(f"SELECT id, batch FROM gen_jobs WHERE id IN ({','.join('?' * len(part))})", part):
+                k = str(int(bt or 0) or jid); B[k] = B.get(k, 0) + 1
+        return {'n': len(Q), 'b': B}
+
     @staticmethod
     def launch_advice(argv, vram=0):
         """V0.1.83 ⚡ 加速檢查：看 ComfyUI 啟動參數有沒有拖慢的設定 → (ok/warn, 建議).

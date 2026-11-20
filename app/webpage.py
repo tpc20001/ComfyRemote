@@ -921,6 +921,13 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
 function gSplit(p){p=String(p||'').replace(/\r/g,'');const B=/\n[ \t]*\n/.test(p)?p.split(/\n[ \t]*\n+/):p.split('\n');return B.map(x=>x.trim()).filter(Boolean)}
 function gMlInfo(){const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
   e.textContent=on?(n?`共 ${n} 篇`+(ni>1?` × ${ni} 張圖 ＝ ${n*ni} 次`:''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const im=LS.get('gorder','txt')==='img';o.textContent=im?'🔀 順序：一張圖先跑完全部文字':'🔀 順序：一篇文字先跑完全部圖'}}
+/* V0.3.39 ⏹ 批量取消：整批（同一次送出的）或全部，一次在電腦上取消（幾百個也是一下子） */
+let GQS={n:0,b:{}},GBSEEN=new Set();
+async function gCancelMany(batch){const n=batch?(GQS.b[String(batch)]||0):GQS.n,run=GJ.filter(x=>x.state==='run'&&(!batch||(x.batch||x.id)===batch));
+  if(!n&&!run.length)return toast('沒有在排隊的');
+  if(n&&!confirm(batch?`取消這一批還在排隊的 ${n} 個？`:`取消全部排隊中的 ${n} 個？`))return;
+  const stop=run.length>0&&confirm(n?`正在跑的那 ${run.length} 張也要中斷嗎？\n（按「取消」＝讓它做完）`:`中斷正在跑的 ${run.length} 張？`);if(!n&&!stop)return;
+  const r=await api('/api/gen_act',{a:'cancel_many',batch:batch||0,run:stop});toast(r.message||'已取消',3000);gJobs();if($('#sysPop')&&$('#sysPop').dataset.t==='q')qLoad($('#sysPop .sysPopB')||$('#sysPop'))}
 function gTimes(j){if(j.state==='run')return j.t_start?`<span class="mu" data-ts="${j.t_start}" data-est="${j.est&&j.est.sec?j.est.sec:''}">⏱</span>`:'';
   if(j.state==='wait')return j.est&&j.est.sec?`<span class="mu">預估運算 ${fmtT(j.est.sec)}${j.eta?` · 大約 ${fmtT(j.eta)} 後開始`:''}</span>`:'<span class="mu">第一次跑這個設定，還沒有時間資料</span>';
   if(j.state==='done'&&j.run_s)return `<span class="mu">⏱ 運算 ${fmtT(j.run_s)}（全部 ${fmtT(j.dur)}）${j.cold===1?' · 有載入模型':''}${j.out_w?` · ${j.out_w}×${j.out_h}`:''}</span>`;return ''}
@@ -931,16 +938,16 @@ function gCard(j,hist){const [nm,col]=GST[j.state]||[j.state,'var(--sub)'];let s
   <div class="mu clamp">${esc(j.prompt||'（沒有提示詞）')}</div><div class="mu hx" style="font-size:11.5px">${FTAG(j.img)}${j.mask?'🖌 局部 · ':''}${j.ref?'📎 參考圖 · ':''}${esc(j.wf)}${j.brief?' · '+esc(j.brief):''}${hist&&j.seed>=0?' · 種子 '+j.seed:''}</div>
   ${j.state==='run'?gBar(j)+`<img class="gpv" data-pv="${j.id}" onerror="this.style.display='none'" ${GPVU[j.id]?`src="${GPVU[j.id]}"`:''} style="${GPVU[j.id]?'':'display:none;'}max-height:180px;max-width:100%;border-radius:10px;margin-top:6px">`:''}<div class="hx">${gTimes(j)}</div>${j.pbrief?`<div class="mu hx" style="font-size:11.5px">⏱ ${esc(j.pbrief)}</div>`:''}${j.state==='fail'?`<div style="color:var(--red);font-size:12.5px">${esc(j.msg)}</div>${gFailTip(j.msg)}`:''}
   <div class="th">${(j.imgs&&j.imgs.length?j.imgs:[j.img]).filter(Boolean).map(x=>{const f=(j.tins&&j.tins['inputs/'+x])||('inputs/'+x);return ISV(x)?`<video class="src" src="${IMGU(f)}#t=0.5" muted playsinline preload="metadata"></video>`:`<img class="src" src="${IMGT(f)}" data-big="${esc(f)}" loading="lazy">`}).join('')}${j.img&&j.outs.length?'<span class="mu">→</span>':''}${j.outs.map((o,i)=>ISV(o)?`<div class="vo"><video src="${IMGU(o)}" controls playsinline preload="metadata"></video><div class="row"><a class="pill" href="${U('/api/img',{f:o,dl:1})}" download>⬇ 存影片</a><button class="pill" data-g="vnext" data-id="${j.id}" data-v="${esc(o)}" title="用這支影片的最後一格當新照片，接著做下一段">⏭ 接下一段</button><button class="pill" data-g="vlast" data-id="${j.id}" data-v="${esc(o)}" title="最後一格存成照片（可以拿去改圖）">🖼 最後一格</button><button class="pill" data-g="vgif" data-id="${j.id}" data-v="${esc(o)}" title="轉成 GIF（LINE、聊天軟體直接會動）">🎞 存 GIF</button></div></div>`:`<img src="${IMGT(o)}" data-big="${esc(o)}" data-id="${j.id}" data-i="${i}" loading="lazy">`).join('')}</div>
-  <div class="row hx">${hist==='trash'?'':busy?`${j.state==='wait'?`<button class="pill" data-g="top" data-id="${j.id}">⏫ 先做這個</button>`:''}<button class="pill er" data-g="cancel" data-id="${j.id}">⏹ 取消</button>`:`<button class="pill" data-g="rerun" data-id="${j.id}">↻ 再跑一次</button>`}
+  <div class="row hx">${hist==='trash'?'':busy?`${j.state==='wait'?`<button class="pill" data-g="top" data-id="${j.id}">⏫ 先做這個</button>`:''}<button class="pill er" data-g="cancel" data-id="${j.id}">⏹ 取消</button>${(()=>{const bk=j.batch||j.id,m=GQS.b[String(bk)]||0;if(hist||m<2||GBSEEN.has(bk))return '';GBSEEN.add(bk);return `<button class="pill er" data-g="cancelb" data-id="${bk}">⏹ 取消這一批（${m} 個）</button>`})()}`:`<button class="pill" data-g="rerun" data-id="${j.id}">↻ 再跑一次</button>`}
   ${busy||hist==='trash'?'':`<button class="pill" data-g="fill" data-id="${j.id}">✎ 用這組設定</button>`}${!busy&&j.state==='done'&&!j.cmp&&gOther(j.wf)?`<button class="pill acc" data-g="other" data-id="${j.id}">${gOther(j.wf)[1]} 換 ${/GROK|INT8/.test(gOther(j.wf)[0])?'GROK':'Qwen'}</button>`:''}${!busy&&!hist?`<button class="pill" data-g="hide" data-id="${j.id}">收起</button>`:''}${hist&&hist!=='trash'&&!busy&&j.img&&!ISV(j.img)&&!j.cmp?`<button class="pill" data-g="tocmp" data-id="${j.id}">🧪 拿去比較</button>`:''}${hist&&!busy?hBtns(hist):''}</div></div>`}
-async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;GJ=j.jobs||[];GOFF=(j.now||Date.now()/1000)-Date.now()/1000;const c=j.comfy||{};
+async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;GJ=j.jobs||[];GQS=j.qsum||{n:0,b:{}};GBSEEN=new Set();GOFF=(j.now||Date.now()/1000)-Date.now()/1000;const c=j.comfy||{};
   const gpu=String(c.gpu||'').replace(/^cuda:\d+\s*/,'').replace(/\s*:\s*cuda\w*$/i,'').replace(/^NVIDIA\s+/,'').replace(/^GeForce\s+/,'');
   $('#gst').innerHTML=c.ok?`<span class="ok"><i></i>ComfyUI ${esc(c.ver||'')}</span>${gpu?`<span title="${esc(c.gpu)}">🎮 ${esc(gpu)}</span>`:''}${c.vram&&c.vram[1]?`<span>VRAM 剩 ${fmtB(c.vram[0])}</span>`:''}`:`<span class="bad"><i></i>連不到 ComfyUI</span>`;
   $('#gerr').innerHTML=(c.ok?'':`<div class="mu" style="color:var(--orange)">電腦上的 ComfyUI 要開著；工作會先排隊，ComfyUI 一開就自動接著跑</div>`)+(j.paused?'<div style="color:var(--orange)">⏸ 生圖在「後台」被暫停了</div>':'');
   const act=GJ.filter(x=>x.state==='run'||x.state==='wait').sort((a,b)=>(a.state!=='run')-(b.state!=='run')||(a.qpos||0)-(b.qpos||0));   // 正在跑的放最上面，排隊照順序                // 這一頁只放製作中的；做好的到「歷史紀錄」
   const was=GACT;GACT=new Set(act.map(x=>x.id));if(was){const fin=GJ.filter(x=>was.has(x.id)&&!GACT.has(x.id));
     const ok=fin.filter(x=>x.state==='done').length,bad=fin.filter(x=>x.state==='fail').length;if(ok||bad){toast((ok?`✔ 做好 ${ok} 個`:'')+(bad?` ✖ ${bad} 張失敗`:'')+' → 在「歷史紀錄」',4500);gNotify(ok,bad,!act.length)}}
-  LS.set('gpend',act.length>0);{const ca=$('#gcanall'),W2=act.filter(x=>x.state==='wait');if(ca){ca.style.display=W2.length>1?'':'none';ca.onclick=async()=>{if(!confirm(`取消還沒開始的 ${W2.length} 個？（正在跑的那個繼續）`))return;for(const x of W2)await api('/api/gen_act',{a:'cancel',id:x.id});toast(`⏹ 取消了 ${W2.length} 個`,2000);gJobs()}}}const ge=$('#geta');if(ge){const e=gEta(act);ge.textContent=e||'做好的在「歷史紀錄」'}
+  LS.set('gpend',act.length>0);{const ca=$('#gcanall');if(ca){ca.style.display=GQS.n>0?'':'none';ca.textContent=`⏹ 全部取消（${GQS.n}）`;ca.onclick=()=>gCancelMany(0)}}const ge=$('#geta');if(ge){const e=gEta(act);ge.textContent=e||'做好的在「歷史紀錄」'}
   const nd=GJ.filter(x=>x.state==='done').length;
   const h=act.map(x=>gCard(x)).join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」 · 做好的在「歷史紀錄」${nd?`（最近 ${nd} 張）`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
   // 剛做好的（最近 1 小時）：直接在這裡看，不用切到歷史紀錄
@@ -1268,6 +1275,7 @@ async function gClick(e){const im=e.target.closest('img[data-big]');
       if(CUR!=='gen'){CUR='gen';LS.set('tab','gen');tabs();show()}else{$('#gw').value=LS.get('gwf','');gWfInfo();gPrev()}scrollTo(0,0)}catch(e){toast('取不到最後一格：'+e,5000)}return}
   if(a==='other'){const J=GJ.concat(HJ).find(x=>x.id===id),OT=J&&gOther(J.wf);if(OT)gOtherGo(id,OT[0]);return}
   if(a==='interp'){const x=await api('/api/gen_act',{a:'interp',id,idx:+b.dataset.i||0});toast(x.ok?x.message:(x.message||'失敗'),4000);return}
+  if(a==='cancelb'){gCancelMany(id);return}
   if(a==='cancel'&&!confirm('取消 #'+id+'？'))return;const r=await api('/api/gen_act',{a,id});toast(r.ok?'好了':(r.message||'失敗'));if(CUR==='gen')gJobs();else hLoad(true)}
 // ---- ⇆ 對比：舊的（左）和新的（右）疊在一起，中間拉桿左右拉
 function cmpShow(on,keep){$('#cmp').style.display=on?'block':'none';$('#ovi').style.display=on?'none':'';$('#ovc').textContent=on?'🖼 單張':'⇆ 對比';if(on){cmpFit();cmpSet(keep?CMPP:50)}}
@@ -1519,7 +1527,7 @@ function sysPopOpen(t0){if($('#sysPop'))return;const w=document.createElement('d
     body.innerHTML='<div class="empty">讀取中…</div>';body.scrollTop=0;tick()};
   w._tab=tab;tab(SYSPOP_T[t0]?t0:'pf');clearInterval(PFX);PFX=setInterval(tick,2000);
   w.addEventListener('click',e=>{if(e.target===w)sysPopClose()});w.querySelector('.sysPopX').onclick=()=>sysPopClose();
-  body.addEventListener('click',e=>{if(w.dataset.t==='q'){const im=e.target.closest('img[data-big]');if(im){gClick(e);return}const c=e.target.closest('[data-goto]');
+  body.addEventListener('click',e=>{if(w.dataset.t==='q'&&e.target.closest('[data-qall]')){e.stopPropagation();gCancelMany(0);return}if(w.dataset.t==='q'){const im=e.target.closest('img[data-big]');if(im){gClick(e);return}const c=e.target.closest('[data-goto]');
       if(c&&!e.target.closest('button')){sysPopClose();if(CUR!=='gen'){CUR='gen';LS.set('tab','gen');tabs();show()}setTimeout(()=>{const x=$(`#gj [data-jid="${c.dataset.goto}"]`);if(x)x.scrollIntoView({block:'center'})},500);return}}
     bgsClick(e)})}
 function sysPopClose(){const w=$('#sysPop');if(!w)return;w.remove();clearInterval(PFX);PFX=null;$$('#sysFab [data-t]').forEach(b=>b.classList.remove('on'))}
@@ -1583,9 +1591,9 @@ async function bgsClick(e){const b=e.target.closest('[data-a],[data-bc]');if(!b)
 
 // ================= 🎨 生圖排隊（浮動視窗）：正在跑、排隊中的；最近做好的幾張。點一筆回到「生圖」那一筆
 async function qLoad(host){let j;try{j=await api('/api/gen?n=30')}catch(e){return}if(!j.ok||!host.isConnected)return;GOFF=(j.now||Date.now()/1000)-Date.now()/1000;
-  const L=j.jobs||[];GJ=L;const A=L.filter(x=>x.state==='run'||x.state==='wait').sort((a,b)=>(a.state!=='run')-(b.state!=='run')||(a.qpos||0)-(b.qpos||0)),D=L.filter(x=>x.state==='done').slice(0,6);
+  const L=j.jobs||[];GJ=L;GQS=j.qsum||{n:0,b:{}};const A=L.filter(x=>x.state==='run'||x.state==='wait').sort((a,b)=>(a.state!=='run')-(b.state!=='run')||(a.qpos||0)-(b.qpos||0)),D=L.filter(x=>x.state==='done').slice(0,6);
   const c=j.comfy||{};const keep=host.scrollTop;
-  host.innerHTML=`<div class="mu" style="margin-bottom:6px">${c.ok?`<span style="color:var(--green)">● ComfyUI ${esc(c.ver||'')}</span>${c.gpu?' · '+esc(c.gpu):''}`:'<span style="color:var(--red)">● 連不到 ComfyUI（工作會先排隊）</span>'}</div>
+  host.innerHTML=`${GQS.n>0||A.some(x=>x.state==='run')?`<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><b style="flex:1">排隊 ${GQS.n} 個</b><button class="pill er" data-qall="1">⏹ 全部取消</button></div>`:''}<div class="mu" style="margin-bottom:6px">${c.ok?`<span style="color:var(--green)">● ComfyUI ${esc(c.ver||'')}</span>${c.gpu?' · '+esc(c.gpu):''}`:'<span style="color:var(--red)">● 連不到 ComfyUI（工作會先排隊）</span>'}</div>
   ${A.length?A.map(x=>`<div class="bgsC" data-goto="${x.id}" style="margin-bottom:6px;cursor:pointer;${x.state==='run'?'border-color:#1f8ef1':''}"><div class="bgsCH"><b>#${x.id} ${x.state==='run'?'▶ '+esc(x.msg||'生成中'):'⏳ 排隊第 '+(x.qpos||'?')+' 個'}</b><span>${esc(x.src)}</span></div>
    <div class="bgsCN" style="opacity:.9">${esc(x.prompt||'（沒有提示詞）')}</div><div class="bgsCN">${esc(x.wf)}${x.brief?' · '+esc(x.brief):''}</div>
    ${x.state==='run'?gBar(x):''}<div>${gTimes(x)}</div></div>`).join(''):'<div class="empty" style="padding:16px 0">現在沒有在跑、也沒有排隊的 ✔</div>'}
@@ -1738,7 +1746,7 @@ async function drawSetCat(again){const sb=$('#sbody');if(!sb)return;const c=S.sc
     <section class="ssec"><h3>🧩 合併與 🎬 影片的進階</h3><div class="srow"><small style="font-size:13.5px;line-height:1.7;color:var(--text)">
     合併有 🏆 GROK 合併（效果好）和 ⚡ Qwen 合併（快），可以「🔁 兩個都跑」。換衣服可以「只換：上衣／褲子／鞋子…」，換場景可以選「放哪裡」。「三張圖合併」＝人物＋衣服＋場景一次換好。合併的圖一可以「🖌 只改圖一的哪裡」保護臉和背景。圖二可以一次選好幾件衣服；「🕘 從最近用過的挑」也列出 👤 人物庫。<br>
     影片：「🔁 無縫循環」做可以一直重播的影片；步數 ⚡ 4 步快一倍；🎵 配樂；🗣 加一句台詞；🎞 首尾幀只給開始畫面會自動先用 GROK 做結束畫面（🪄 一鍵首尾幀）。做好的影片可以「⏭ 接下一段」「🖼 最後一格」「🎞 存 GIF」。<br>
-    排隊：「⏫ 先做這個」插隊、「⏹ 全取消」。做的時候卡片會出現即時預覽（ComfyUI 要開預覽，🩺 診斷會提醒）。失敗的會寫「💡 怎麼辦」。</small></div></section>
+    排隊：「⏫ 先做這個」插隊；「⏹ 取消這一批」一次取消同一次送出的全部、「⏹ 全部取消」取消所有排隊的（上面「🎨 排隊」浮動視窗也有），會再問正在跑的那張要不要一起停。做的時候卡片會出現即時預覽（ComfyUI 要開預覽，🩺 診斷會提醒）。失敗的會寫「💡 怎麼辦」。</small></div></section>
     <section class="ssec"><h3>🎨 改一張照片（最常用）</h3><div class="srow"><small style="font-size:13.5px;line-height:1.7;color:var(--text)">
     ① 選照片；要裁切或轉正按照片左下角「✂ 裁切」；只想改一小塊（衣服、背景某處）按右下角「🖌 局部」塗那一塊，其他地方保證跟原圖一模一樣。<br>② 打想怎麼改，或點「🪄 常用改法」挑一句（可以疊好幾句）；換衣服、換背景時打開「🔒 保持臉不變」。<br>
     ③ 點大按鈕選流程：🏆 GROK（效果最好）或 ⚡ Qwen（最快）；拿不定主意就按「🔁 兩個都跑」。「畫質」選 ⚡快／標準／🔍精細。<br>

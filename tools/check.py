@@ -456,6 +456,15 @@ def t_launch():
     W.clear(); [W.__setitem__(i + 1, 'G') for i in range(4)]; E.gen_q = __import__('collections').deque(W); E._pick_wf = 'G'; E.lock = __import__('threading').RLock()   # V0.3.05 ⏫ 先做這個
     assert E.gen_top(3) and E._gen_pick() == 3 and not E.gen_top(99)
     print('    ✔ 同模型先跑（最多插隊 6 次）')
+    # V0.3.39 ⏹ 批量取消：只取消這一批／全部；正在跑的要另外指定才中斷
+    d = tempfile.mkdtemp(); E = core.Engine(d, version='0.0.1', start=False)
+    for i in range(1, 9): E.db.x("INSERT INTO gen_jobs(id, wf, prompt, state, batch, t) VALUES(?, 'G', 'p', 'wait', ?, 0)", (i, 1 if i <= 5 else 6))
+    E.gen_q = __import__('collections').deque(range(2, 9)); E.gen_active = {1: {'batch': 1}}
+    Q = E.gen_qsum(); assert Q['n'] == 7 and Q['b'] == {'1': 4, '6': 3}, Q
+    r = E.gen_cancel_many(1); assert r['n'] == 4 and r['run'] == 0 and list(E.gen_q) == [6, 7, 8] and not E.gen_active[1].get('cancel'), r
+    assert {x[0] for x in E.db.q("SELECT id FROM gen_jobs WHERE state='stop'")} == {2, 3, 4, 5}
+    r = E.gen_cancel_many(0, run=True); assert r['n'] == 3 and r['run'] == 1 and not E.gen_q and E.gen_active[1]['cancel'], r
+    print('    ✔ 批量取消（這一批／全部／連正在跑的）')
     # V0.1.96 縮圖：用假的 QImage 測流程（存檔、快取、小圖不做）
     import types as _t
     class QI:
