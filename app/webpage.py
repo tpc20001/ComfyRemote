@@ -550,7 +550,7 @@ function gTool(){const box=$('#gtool');if(!box)return;{const tp=$('#gtpl'),hm=$(
   const tq=$('#tq');tq.oninput=()=>{TQ=tq.value.trim();gTool();const n=$('#tq');n.focus();n.setSelectionRange(n.value.length,n.value.length)};
   $('#gtd').ontoggle=()=>LS.set('gtool_o',$('#gtd').open);
   box.querySelector('.tgrid').onclick=e=>{const b=e.target.closest('[data-tk]');if(!b)return;const t=TOOLS.find(x=>x.k===b.dataset.tk);LS.set('trecent',[t.k].concat(LS.get('trecent',[]).filter(k=>k!==t.k)).slice(0,8));$$('.tbtn',box).forEach(x=>x.classList.toggle('on',x===b));
-    if(t.multi){const g=$('#gp'),keep=t.k==='set'?'，保持人物的臉、五官、髮型和身材完全不變':t.k==='stk'?'。把圖中的人畫成 Q 版可愛貼圖，保留他的臉部特徵和髮型，粗白邊，背景是純綠色（#00FF00），字是可愛的手寫字':'，商品的形狀、顏色、Logo 和細節完全不變';g.value=t.multi.map(x=>x+keep).join('\n');g.rows=8;LS.set('gprompt',g.value);$('#gml').checked=true;LS.set('gml',true);GCUE=null;
+    if(t.multi){const g=$('#gp'),keep=t.k==='set'?'，保持人物的臉、五官、髮型和身材完全不變':t.k==='stk'?'。把圖中的人畫成 Q 版可愛貼圖，保留他的臉部特徵和髮型，粗白邊，背景是純綠色（#00FF00），字是可愛的手寫字':'，商品的形狀、顏色、Logo 和細節完全不變';g.value=t.multi.map(x=>x+keep).join('\n\n');g.rows=12;LS.set('gprompt',g.value);$('#gml').checked=true;LS.set('gml',true);gMlInfo();GCUE=null;
       toast(`${t.ic} ${t.n}：${t.multi.length} 句各做一張（同一個種子、收成一組），可以刪掉不要的行`,4000);return}   // V0.2.91 組圖
     const go=v=>{const g=$('#gp');g.value=t.p.replace('{0}',v||'');if(t.k==='text'&&/→|->/.test(v||'')){const [o,n]=v.split(/→|->/).map(x=>x.trim());g.value=`把圖片裡的「${o}」改成「${n}」，字型、顏色、粗細、大小、位置和透視都跟原本一樣，其他文字和地方都不變`}GCUE=t.cue?{cue:t.cue,p:g.value.slice(0,12)}:null;
       setTimeout(()=>{let it=null;GDEF.forEach(G=>G.items.forEach(x=>{if(!it&&/\.denoise$/.test(x.id))it=x}));if(it){const O=LS.get(PK(),{});if(t.den)O[it.id]=t.den;else delete O[it.id];LS.set(PK(),O);gParams()}},t.k==='erase'||t.k==='id'?600:50);LS.set('gprompt',g.value);$('#task').innerHTML='';   // 工具建議的改動幅度（美顏用輕輕修）
@@ -710,7 +710,7 @@ function gBgUp(f){if(f._p||!f||!(f instanceof Blob))return;f._p=(async()=>{const
   f._p.then(nm=>{if(f._taken)return;const i=GFILES.indexOf(f);if(i<0)return;GFILES.splice(i,1);GIMGS.push(nm);LS.set('gimgs',GIMGS);if(GMASK.has(f)){const b=GMASK.get(f);GMASK.delete(f);GMASK.set(nm,b);gMaskSave(nm,b)}if(CUR==='gen')gPrev()}).catch(()=>{f._p=null})}
 function gAddFiles(F){if(!F.length)return;GFILES=GFILES.concat(F);F.forEach(gBgUp);gPrev();const n=GIMGS.length+GFILES.length;if(n>F.length)toast(`✔ 加了 ${F.length} 張，現在共 ${n} 張（✕ 可以拿掉）`,2500)}
 function gDel(k){GMASK.delete(gKey(k));{const M=LS.get('gmask',{});delete M[gKey(k)];LS.set('gmask',M)}if(k<GIMGS.length){GIMGS.splice(k,1);LS.set('gimgs',GIMGS)}else GFILES.splice(k-GIMGS.length,1);gPrev()}
-function gPrev(){const d=$('#gpick');if(!d)return;const L=gSrcList(),n=L.length;
+function gPrev(){const d=$('#gpick');if(!d)return;setTimeout(gMlInfo,0);const L=gSrcList(),n=L.length;
   const w=gWf();if((w.n_img||0)>1){const t=(w.slots||[])[0]||'圖一';d.innerHTML=`<div class="slt">${esc(t)}</div>`+(n?`<img src="${L[0].t||L[0].u}">${n>1?`<div class="mu">共 ${n} 張</div>`:'<div class="mu">點一下換</div>'}${/^兩張圖合併/.test(w.name)&&n===1?`<button class="pill ${GMASK.has(gKey(0))?'acc':''}" data-gmask="0" style="margin-top:6px">🖌 ${GMASK.has(gKey(0))?'局部 ✔':'只改圖一的哪裡'}</button>`:''}`:'<div style="padding:16px 0">📷 點這裡選</div>');return}
   const cnt=$('#gcnt');if(cnt)cnt.textContent=n?`${n} 張`:'';
   if(!n){d.innerHTML=`<div class="gempty" data-gadd="1"><div class="ic">📷</div><b>點這裡選照片</b><span class="mu">相簿或拍照，可以一次選很多張</span></div>`;return}
@@ -829,12 +829,12 @@ function gTpl(){const box=$('#gtpl');if(!box)return;const open=LS.get('gtpl_o','
   $('#gkeep').onchange=()=>{LS.set('gkeep',$('#gkeep').checked);gTpl();toast($('#gkeep').checked?'🔒 開始時會在提示詞後面加「保持臉不變」':'不加了',2000)};
   box.onclick=e=>{const c=e.target.closest('[data-tc]');if(c){LS.set('gtpl_o',open===c.dataset.tc?'':c.dataset.tc);gTpl();return}
     if(e.target.closest('[data-tall]')){const L=(GTPL.find(x=>x[0]===open)||[0,[]])[1],g=$('#gp');if(g.value.trim()&&!confirm(`換成「${open}」的 ${L.length} 句、每句各做一張？（現在框裡的字會被換掉）`))return;
-      g.value=L.join('\n');g.rows=Math.min(8,L.length);LS.set('gprompt',g.value);$('#gml').checked=true;LS.set('gml',true);toast(`📚 ${L.length} 句各做一張（「每一行當一個提示詞」已勾）：按開始`,3500);return}
+      g.value=L.join('\n\n');g.rows=Math.min(12,L.length*2);LS.set('gprompt',g.value);$('#gml').checked=true;gMlInfo();LS.set('gml',true);toast(`📚 ${L.length} 句各做一張（「每一行當一個提示詞」已勾）：按開始`,3500);return}
     const t=e.target.closest('[data-tt]');if(!t)return;if(/參考圖/.test(t.dataset.tt)&&!GREF)setTimeout(()=>toast('記得按上面「📎 加參考圖」選那張圖',3500),1300);const g=$('#gp'),v=g.value.trim();g.value=v?v.replace(/[，。,.\s]+$/,'')+'，'+t.dataset.tt:t.dataset.tt;LS.set('gprompt',g.value);
     if(open==='🏞 背景'&&!GMASK.size&&!LS.get('tip_bgmask',false)){LS.set('tip_bgmask',true);toast('小技巧：想讓人物完全不變 → 照片右下角「🖌 局部」塗人物，再按「🔁 反過來：塗的保留」，就只換背景',7000)}else toast(v?'接在後面了':'已填入（可以再改）',1200)}}
 // V0.2.12 開始按鈕上直接寫「會排幾張、大概多久」：照片數 × 張數 × 提示詞行數 × 流程數，時間用你實測的平均
 function gGoLbl(){const b=$('#ggo');if(!b||b.disabled||!GWFS.length)return;const w=gWf();if(!w.name)return;const p=($('#gp')||{}).value||'';
-  const np=w.need_img?Math.max(1,GIMGS.length+GFILES.length):1,nc=+($('#gc')||{}).value||1,nl=Math.min(24,($('#gml')&&$('#gml').checked?p.split('\n').filter(x=>x.trim()):[p]).flatMap(gExpand).length||1);
+  const np=w.need_img?Math.max(1,GIMGS.length+GFILES.length):1,nc=+($('#gc')||{}).value||1,nl=Math.min(50,($('#gml')&&$('#gml').checked?gSplit(p):[p]).flatMap(gExpand).length||1);
   const WL=gBoth()?gBigOn().map(x=>x[0]):[w.name];let n=0,sec=0;WL.forEach(x=>{const k=np*nc*nl;n+=k;sec+=k*(GSPD[x]||(BIG.find(y=>y[0]===x)||[])[3]||(/H3|影片/.test(x)?300:/合併/.test(x)?50:60))});
   const md=gModeOf(w.name),vb={edit:'改圖',merge:'合併',vid:'做影片',fl:'做影片'}[md]||'開始',un=md==='vid'||md==='fl'?'支':'張';const fl0=md==='fl'&&!(GSF[1]||[]).length&&!(GSI[1]||[]).length;
   const t=fl0?'▶ 先做結束畫面＋影片':(n>1||sec>=60?`▶ ${vb} · ${n} ${un} · 約 ${sec<90?Math.round(sec)+' 秒':Math.round(sec/60)+' 分'}`:`▶ ${vb}`);if(b.textContent!==t)b.textContent=t}
@@ -890,7 +890,8 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     const dim=u=>new Promise(ok=>{if(!u)return ok(0);const im=new Image();im.onload=()=>ok(im.naturalWidth/im.naturalHeight);im.onerror=()=>ok(0);im.src=u});const [a1,a2]=await Promise.all([dim(src(0)),dim(src(1))]);
     if(a1&&a2&&Math.abs(Math.log(a1/a2))>0.15&&!confirm(`首幀和尾幀的比例差很多（${a1>1?'橫':'直'}的 vs ${a2>1?'橫':'直'}的），影片會照首幀的比例，尾幀可能被裁掉或拉歪。\n建議兩張用一樣比例的照片（例如尾幀用改圖從首幀做出來，比例就一定一樣）。還是要開始？`))return}
   let many=w.need_img?(GFILES.length+GIMGS.length):1;for(let i=1;i<NS;i++)many*=((GSF[i]||[]).length||(GSI[i]||[]).length);
-  if(many>1&&!confirm(`批量：${many} 張照片 × ${$('#gc').value} 張 = ${many*+$('#gc').value} 個工作，都用同一段提示詞？`))return;if(!p&&!(w.cr||{}).blank_ok&&!confirm('沒有打提示詞，照流程原本的跑？'))return;
+  const NT=$('#gml')&&$('#gml').checked&&!/H3|minimax/i.test(w.name)?Math.min(50,gSplit(p).flatMap(gExpand).length||1):1;   // V0.3.38 多篇文字
+  if(many>1&&!confirm(NT>1?`批量：${many} 張照片 × ${NT} 篇文字 × ${$('#gc').value} 張 = ${many*NT*+$('#gc').value} 個工作。\n順序：${LS.get('gorder','txt')==='img'?'一張圖先跑完全部文字':'一篇文字先跑完全部圖'}（可以按「🔀 順序」切換）`:`批量：${many} 張照片 × ${$('#gc').value} 張 = ${many*+$('#gc').value} 個工作，都用同一段提示詞？`))return;if(!p&&!(w.cr||{}).blank_ok&&!confirm('沒有打提示詞，照流程原本的跑？'))return;
   const b=$('#ggo');b.disabled=true;try{
     if(GFILES.length&&w.need_img){const FS=GFILES.slice(),N=[];FS.forEach(f=>f._taken=true);for(let i=0;i<FS.length;i++){toast(`照片上傳中… ${i+1}／${FS.length}`,60000);let nm=null;
         if(FS[i]._p)try{nm=await FS[i]._p}catch(e){}
@@ -907,13 +908,19 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     LS.set('gwf_hist',[w.name].concat(LS.get('gwf_hist',[]).filter(n=>n!==w.name)).slice(0,8));
     const SEQ=LS.get('vseq',false)&&/H3/.test(w.name)&&!/首尾幀/.test(w.name)&&p.includes('\n')?p.split('\n').map(x=>x.trim()).filter(Boolean):null;
     if(SEQ&&SEQ.length>1){body.chain={kind:'seq',wf:w.name,prompts:SEQ.slice(1).map(x=>x+KP),params:LS.get(PK(),{})}}
-    const PL0=SEQ?[SEQ[0]]:$('#gml')&&$('#gml').checked&&!/H3|minimax/i.test(w.name)?p.split('\n').map(x=>x.trim()).filter(Boolean):[p];const PL=SEQ?PL0:PL0.flatMap(gExpand).slice(0,24);let r={ok:true},tot=0;   // 每一行一個提示詞：各排一次
+    const PL0=SEQ?[SEQ[0]]:$('#gml')&&$('#gml').checked&&!/H3|minimax/i.test(w.name)?gSplit(p):[p];const PL=SEQ?PL0:PL0.flatMap(gExpand).slice(0,50);let r={ok:true},tot=0;   // 每一行一個提示詞：各排一次
     const MP2=['兩張圖合併（INT8 快）','兩張圖合併（Qwen 快）'];const WL=gBoth()?gBigOn().map(b=>b[0]):LS.get('gboth_m',false)&&MP2.includes(w.name)&&MP2.every(n=>GWFS.some(x=>x.name===n))?MP2.slice():[w.name];   // 🔁 兩個都跑：快的先排，先看到結果
     WL.sort((a,b)=>(GSPD[a]||99)-(GSPD[b]||99));
     const FS=PL.length>1?Math.floor(Math.random()*2147483000)+1:0;   // V0.2.70 好幾種寫法一起試：用同一個種子，比較公平（差別只來自提示詞）
-    let J0=0;for(const wn of WL){body.wf=wn;body.params=LS.get('gpar:'+wn,{});if(FS&&wn===$('#gw').value){const sid=(GDEF.flatMap(g=>g.items).find(it=>it.type==='seed')||{}).id;if(sid&&!(sid in body.params))body.params=Object.assign({},body.params,{[sid]:FS})}for(const q of PL){body.prompt=q+KP;const MANY=WL.length>1||PL.length>1;if(MANY&&J0)body.join=J0;r=await api('/api/gen_run',body);if(!r.ok)break;tot+=(r.ids||[]).length;if(MANY&&!J0)J0=(r.ids||[])[0]||0}if(!r.ok)break}
+    let J0=0;for(const wn of WL){body.wf=wn;body.params=LS.get('gpar:'+wn,{});if(FS&&wn===$('#gw').value){const sid=(GDEF.flatMap(g=>g.items).find(it=>it.type==='seed')||{}).id;if(sid&&!(sid in body.params))body.params=Object.assign({},body.params,{[sid]:FS})}const IMO=LS.get('gorder','txt')==='img'&&PL.length>1&&NS<=1&&body.imgs.length>1;   // V0.3.38 🔀 一張圖先跑完全部文字
+      const IG=IMO?body.imgs.map(x=>[x]):[body.imgs],IM0=body.imgs,MK0=body.masks;
+      for(const ig of IG){for(const q of PL){body.prompt=q+KP;body.imgs=ig;if(IMO){body.masks={};for(const n of ig)if(MK0[n])body.masks[n]=MK0[n]}const MANY=WL.length>1||PL.length>1;if(MANY&&J0)body.join=J0;r=await api('/api/gen_run',body);if(!r.ok)break;tot+=(r.ids||[]).length;if(MANY&&!J0)J0=(r.ids||[])[0]||0}if(!r.ok)break}body.imgs=IM0;body.masks=MK0;if(!r.ok)break}
     if(r.ok&&WL.length>1)r.message=`兩個流程都排了，共 ${tot} 張（快的先跑）`;
-    toast(r.ok?(PL.length>1?`✔ ${PL.length} 個提示詞 × 照片，共排了 ${tot} 張`:'✔ '+r.message)+'，電腦開始跑':(r.message||'失敗'),r.ok?3000:6000);if(r.ok){LS.set('gprompt',p);gJobs();gPl()}}catch(e){toast('失敗：'+e.message,5000)}finally{b.disabled=false}}
+    toast(r.ok?(PL.length>1?`✔ ${PL.length} 篇文字 × 照片，共排了 ${tot} 個工作`:'✔ '+r.message)+'，電腦開始跑':(r.message||'失敗'),r.ok?3000:6000);if(r.ok){LS.set('gprompt',p);gJobs();gPl()}}catch(e){toast('失敗：'+e.message,5000)}finally{b.disabled=false}}
+/* V0.3.38 多篇文字：有空行 → 用空行分篇（一篇可以有好幾行）；沒有空行 → 跟以前一樣每一行一篇。最多 50 篇 */
+function gSplit(p){p=String(p||'').replace(/\r/g,'');const B=/\n[ \t]*\n/.test(p)?p.split(/\n[ \t]*\n+/):p.split('\n');return B.map(x=>x.trim()).filter(Boolean)}
+function gMlInfo(){const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
+  e.textContent=on?(n?`共 ${n} 篇`+(ni>1?` × ${ni} 張圖 ＝ ${n*ni} 次`:''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const im=LS.get('gorder','txt')==='img';o.textContent=im?'🔀 順序：一張圖先跑完全部文字':'🔀 順序：一篇文字先跑完全部圖'}}
 function gTimes(j){if(j.state==='run')return j.t_start?`<span class="mu" data-ts="${j.t_start}" data-est="${j.est&&j.est.sec?j.est.sec:''}">⏱</span>`:'';
   if(j.state==='wait')return j.est&&j.est.sec?`<span class="mu">預估運算 ${fmtT(j.est.sec)}${j.eta?` · 大約 ${fmtT(j.eta)} 後開始`:''}</span>`:'<span class="mu">第一次跑這個設定，還沒有時間資料</span>';
   if(j.state==='done'&&j.run_s)return `<span class="mu">⏱ 運算 ${fmtT(j.run_s)}（全部 ${fmtT(j.dur)}）${j.cold===1?' · 有載入模型':''}${j.out_w?` · ${j.out_w}×${j.out_h}`:''}</span>`;return ''}
@@ -961,7 +968,7 @@ async function rGen(again){if(again)return gJobs();
   <section class="gcard"><div class="ghd"><span class="gnum">2</span><b>想怎麼改</b><span class="grow"></span><button class="gclr" id="gpfix" title="依你寫的內容，自動補上「哪些地方要保持不變」" style="margin-right:6px;border-color:var(--accent);color:var(--accent)">🪄 補完整</button><button class="gclr" id="gpclr" title="清掉提示詞（可以復原）">清掉</button></div>
   <div class="gmrg" id="gmrg"></div><textarea id="gp" rows="3" placeholder="想怎麼改？例如：把衣服換成紅色連身裙"></textarea><div class="gtool" id="gtool" style="margin-top:8px"></div>
   <div class="gtcat" id="gvact"></div><div class="gref" id="gref"></div><input type="file" id="grf" accept="image/*" style="display:none"><div class="gppl" id="gppl"></div><div class="gtpl" id="gtpl"></div><div class="gpls" id="gpls"></div>
-  <label class="gmlb"><input type="checkbox" id="gml" ${LS.get('gml',false)?'checked':''}> 每一行算一個提示詞（一次試好幾種寫法）</label>
+  <label class="gmlb"><input type="checkbox" id="gml" ${LS.get('gml',false)?'checked':''}><span>多篇文字：用<b>空行</b>隔開，每篇做一次　<span class="mu" id="gmln"></span></span></label><button class="pill" id="gord" hidden title="多張圖＋多篇文字時，排隊的順序"></button>
   <div class="mu" id="gh3" style="display:none"><a href="javascript:void(0)" id="gh3b">📝 插入 H3 提示詞格式</a>　分鏡＋對白＋聲音寫在一起；英文描述效果最好，對白可以用中文</div>
   <details id="gnd"><summary class="mu">＋ 負面提示詞</summary><textarea id="gn" rows="2"></textarea></details></section>
   <section class="gcard"><div class="ghd"><span class="gnum">3</span><b>流程與設定</b></div>
@@ -969,7 +976,7 @@ async function rGen(again){if(again)return gJobs();
   <div class="gqual" id="gqual"></div><div class="gqual" id="gdur"></div><div class="gqual" id="gtst"></div><div class="gqual" id="gden"></div><div class="gwq" id="gwq"></div><div id="gwi"></div><div id="gmod"></div><details id="gadv" class="gadv"><summary>⚙ 進階設定 <span class="mu">一般不用動</span></summary><div id="gpar"></div></details></section>
   <div class="ggobar"><button class="ggo" id="ggo">▶ 開始</button></div>
   <section class="gcard"><div class="ghd"><b style="white-space:nowrap">⏳ 製作中</b><span class="grow"></span><button class="gclr" id="gcanall" style="display:none;white-space:nowrap">⏹ 全取消</button></div><div class="mu" id="geta" style="margin:-4px 0 8px">做好的在「歷史紀錄」</div><div id="gj"></div><div id="gdone"></div></section><div style="text-align:center;margin:4px 0 18px"><button class="gclr" id="greset" title="照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）">🧹 全部重來</button></div></div>`;
-  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>LS.set('gprompt',$('#gp').value);$('#gml').onchange=()=>LS.set('gml',$('#gml').checked);gPl();gTpl();gRef();gMaskLoad();gTour();
+  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>{LS.set('gprompt',$('#gp').value);gMlInfo()};$('#gml').onchange=()=>{LS.set('gml',$('#gml').checked);gMlInfo()};$('#gord').onclick=()=>{LS.set('gorder',LS.get('gorder','txt')==='img'?'txt':'img');gMlInfo();toast($('#gord').textContent,2500)};setTimeout(gMlInfo,50);gPl();gTpl();gRef();gMaskLoad();gTour();
   $('#greset').onclick=()=>{if(!confirm('全部重來？照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）'))return;
     GIMGS=[];GFILES=[];LS.set('gimgs',[]);GMASK.clear();LS.set('gmask',{});GREF=null;LS.set('gref','');LS.set('gboth',false);LS.set('gkeep',false);LS.set('gml',false);
     const g=$('#gp');g.value='';g.rows=3;LS.set('gprompt','');$('#gml').checked=false;gPrev();gRef();gTpl();gWfInfo();scrollTo(0,0);toast('🧹 清乾淨了，選新照片吧',2000)};
@@ -1742,7 +1749,7 @@ async function drawSetCat(again){const sb=$('#sbody');if(!sb)return;const c=S.sc
     <b>↔ 擴圖</b>：「✂ 裁切」裡選 16:9、9:16…，把畫面往外補（直的變橫的、做桌布）。<br>
     <b>📎 參考圖</b>：再給一張衣服／商品／地點／畫風的圖，提示詞寫「參考圖」指它，例如「把衣服換成參考圖裡的衣服」。<br>
     <b>📌 配方</b>：常做的改法（流程＋提示詞＋畫質＋保持臉）存起來，生圖頁最上面點一下套好。<br>
-    <b>📚 一次試很多種</b>：常用改法任一類按「📚 這類全部各做一張」，或勾「每一行當一個提示詞」；歷史紀錄會收成一組方便比。<br>
+    <b>📚 一次試很多種</b>：常用改法任一類按「📚 這類全部各做一張」，或勾「多篇文字」（每篇用空行隔開，各做一次；多張圖時可以切換順序）；歷史紀錄會收成一組方便比。<br>
     <b>🖼 存前後對比圖</b>：看大圖時按，原圖和結果拼成一張存到手機。</small></div></section>
     <section class="ssec"><h3>🧪 比較模型（整晚跑、早上看）</h3><div class="srow"><small style="font-size:13.5px;line-height:1.7;color:var(--text)">
     ① 「🧪 比較」選好幾張照片、打一句提示詞。<br>② 勾想比的模型（或按「⭐ 推薦」）。點開一列可以看說明、授權、缺哪些模型、調參數；虛線框是「同模型不同設定」，也可以自己「＋ 另存成一欄」。<br>
@@ -1757,7 +1764,7 @@ async function drawSetCat(again){const sb=$('#sbody');if(!sb)return;const c=S.sc
     🏆 效果最好：GROK 改圖（INT8 快），一張約 40 秒。⚡ 速度最快、效果可以：Qwen 2.1 Turbo 改圖，一張約 24 秒。<br>
     以前試過的其他模型可以在「設定 → 🧩 模型檔 → 🧹 精簡」一次收掉、刪掉模型省空間。</small></div></section>
     <section class="ssec"><h3>其他好用的</h3><div class="srow"><small style="font-size:13.5px;line-height:1.7;color:var(--text)">
-    ⭐ 提示詞「存這句」常用的一點就填；勾「每一行當一個提示詞」一次試好幾種寫法。👤 人物庫：提示詞寫 a01 自動帶他的照片。<br>
+    ⭐ 提示詞「存這句」常用的一點就填；勾「多篇文字」，每篇用空行隔開，一次試好幾種寫法。👤 人物庫：提示詞寫 a01 自動帶他的照片。<br>
     任何結果點開都能打 1～5 星，歷史紀錄「⭐ 高分」只看好的。臨時送的單張會插在比較那一大批前面先跑。</small></div></section>`;$$('.ssec',sb).forEach((x,i)=>{const h=x.querySelector('h3');if(!h)return;h.style.cursor='pointer';const set=o=>{x.querySelectorAll('.srow').forEach(r=>r.style.display=o?'':'none');h.dataset.o=o?'1':'';h.textContent=h.textContent.replace(/^[▸▾] /,'');h.textContent=(o?'▾ ':'▸ ')+h.textContent};set(i<2);h.onclick=()=>set(!h.dataset.o)});return}
   if(c==='diag'){sb.innerHTML='<h2 class="stt">🩺 診斷</h2><div class="empty">檢查中…</div>';const r=await api('/api/diag');if(S.scat!=='diag')return;
     const I={ok:'✔',warn:'⚠',bad:'✖'},C={ok:'var(--green)',warn:'var(--orange)',bad:'var(--red)'};

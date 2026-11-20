@@ -21,10 +21,11 @@ def main(out, tab='gen', js='', setup=''):
     with sync_playwright() as p:
         b = p.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
         ctx = b.new_context(viewport={'width': int(os.environ.get('VW', '400')), 'height': 860}, device_scale_factor=2); ctx.add_cookies([{'name': 'app_t', 'value': tok, 'url': f'http://127.0.0.1:{wp}/'}]); pg = ctx.new_page()
-        errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and errs.append(m.text))
+        pg.on('dialog', lambda d: d.accept()) if os.environ.get('ACCEPT') else None; errs = []; pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: m.type == 'error' and errs.append(m.text))
         pg.goto(f'http://127.0.0.1:{wp}/'); pg.evaluate(f"localStorage.clear();localStorage.setItem('app_tok',JSON.stringify({json.dumps(tok)}));localStorage.setItem('app_tab',JSON.stringify({json.dumps(tab)}));localStorage.setItem('app_gimgs',JSON.stringify([{json.dumps(img)}]))")
         pg.goto(f'http://127.0.0.1:{wp}/'); pg.wait_for_timeout(1500)
         if js: pg.evaluate(js); pg.wait_for_timeout(int(os.environ.get('WAIT', '1200')))
+        if os.environ.get('OUTJS'): print('OUT:', pg.evaluate(os.environ['OUTJS']))
         pg.screenshot(path=out, full_page=os.environ.get('FULL') == '1'); b.close()
     print('errors:', errs or 'none')
     S.close(); E.shutdown(); shutil.rmtree(d, ignore_errors=True)
