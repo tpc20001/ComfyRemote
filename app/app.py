@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.54'
+APP_VERSION = '0.3.55'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -2346,6 +2346,19 @@ class Main(QMainWindow):
         except Exception: ENG.log.err('雲端更新：啟動')
 
     def _hs_paint(self):
+        try:                                                                    # V0.3.55 連不到 ComfyUI 3 分鐘／卡住：狀態列＋托盤通知一次
+            w = getattr(ENG, 'gen_wait', '') and len(ENG.gen_q) and time.time() - getattr(ENG, 'gen_wait_t', time.time()) > 180
+            st = [j for j, J in list(ENG.gen_active.items()) if J.get('stall')]
+            key = ('w' if w else '') + ','.join(map(str, st))
+            if key and key != getattr(self, '_stall_told', ''):
+                m = (f'連不到 ComfyUI 已 {int((time.time() - ENG.gen_wait_t) / 60)} 分鐘，排隊 {len(ENG.gen_q)} 張在等（ComfyUI 有開嗎？記憶體夠嗎？）' if w else
+                     f'ComfyUI 卡住沒進度（#{"、#".join(map(str, st))}）：多半記憶體不夠，可以按手機卡片的「🔄 中斷重來」，20 分鐘會自動重來')
+                self.msg('⚠ ' + m, 60000)
+                try:
+                    if self.tray: self.tray.showMessage(BRAND['name'] + ' · 生圖卡住了', m, QSystemTrayIcon.Warning, 15000)
+                except Exception: pass
+            self._stall_told = key
+        except Exception: pass
         try:
             I = hslink.info()
             if I.get('ok'): self.b_hs.setText(f"🤝 Lv{I['lv']}" + (f" · {I['cap']:.0f}%" if I.get('cap') is not None else '')); self.b_hs.setToolTip('🤝 ' + str(I.get('why') or '') + '\n點一下：Lv 1～10、這台有誰參與、分配')

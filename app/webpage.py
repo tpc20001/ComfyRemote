@@ -1964,7 +1964,7 @@ function gFinal(noML){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml
 function pkPrev(){const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
   if(!L.length){e.innerHTML='';return}if(L.length===1&&!x&&!/\{[^{}]*\|/.test(t)){e.innerHTML='';return}   // 只有自己打的一句：不用再顯示一次
   const op=LS.get('gfin_o',L.length<=3),hl=s=>{let h=esc(s);if(x)h=h.replace(esc(x),`<i>${esc(x)}</i>`);return h};
-  e.innerHTML=`<div class="gfin"><div class="h"><b>📝 會送出 ${L.length} 個提示詞</b>${x?`<button class="pill" id="pkM" title="把積木的字寫進上面，之後可以自己改">⬆ 積木合併到上面</button><button class="pill er" id="pkC">清除積木</button>`:''}<button class="pill" id="gfinT">${op?'收起':'看全部'}</button></div>
+  e.innerHTML=`<div class="gfin"><div class="h"><b>📝 會送出 ${L.length} 個提示詞${L.some(q=>q.includes('〔🎲'))?`（🎲 每個做 ${+($('#gc')||{}).value||1} 張、各隨機）`:''}</b>${x?`<button class="pill" id="pkM" title="把積木的字寫進上面，之後可以自己改">⬆ 積木合併到上面</button><button class="pill er" id="pkC">清除積木</button>`:''}<button class="pill" id="gfinT">${op?'收起':'看全部'}</button></div>
   ${op?`<ol>${L.map(p=>`<li>${hl(p)}</li>`).join('')}</ol>`:`<div class="mu" style="margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hl(L[0])}</div>`}${x?'<div class="mu" style="font-size:12px;margin-top:4px">紫色字＝🏷 積木加上去的</div>':''}</div>`;
   $('#gfinT').onclick=()=>{LS.set('gfin_o',!op);pkPrev()};
   if(x){$('#pkC').onclick=()=>{PKS={};LS.set('pksel',PKS);pkDraw();pkPrev()};
