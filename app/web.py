@@ -674,6 +674,27 @@ class WebServer:
         if not b: return Resp(204, b'', 'text/plain')
         return Resp(200, b, 'image/png' if b[:4] == b'\x89PNG' else 'image/jpeg', {'Cache-Control': 'no-store'})
 
+    # ---- V0.3.41 🏷 提示詞積木＋📚 整篇範本：存在電腦的 Data\prompt_kit.json（每支手機都看得到同一份）
+    def api_pkit(self, req):
+        f = Path(self.E().data) / 'prompt_kit.json'
+        if req.method != 'POST':
+            try: return jresp({'ok': True, **json.loads(f.read_text(encoding='utf-8'))})
+            except Exception: return jresp({'ok': True, 'cats': [], 'docs': [], 't': 0})
+        d = req.json() or {}
+        cats = d.get('cats'); docs = d.get('docs')
+        if not isinstance(cats, list) or not isinstance(docs, list): return jresp({'ok': False, 'message': '格式不對'}, 400)
+        K = {'cats': [{'id': str(c.get('id') or ''), 'name': str(c.get('name') or '')[:40], 'multi': bool(c.get('multi')),
+                       'opts': [{'id': str(o.get('id') or ''), 't': str(o.get('t') or '')[:2000]} for o in (c.get('opts') or [])[:300] if str(o.get('t') or '').strip()]}
+                      for c in cats[:100] if str(c.get('name') or '').strip()],
+             'docs': [{'id': str(x.get('id') or ''), 'title': str(x.get('title') or '')[:80], 'text': str(x.get('text') or '')[:60000], 't': float(x.get('t') or 0)}
+                      for x in docs[:300] if str(x.get('text') or '').strip()], 't': time.time()}
+        tmp = f.with_suffix('.tmp')
+        try:
+            if f.exists(): shutil.copy2(f, f.with_suffix('.bak.json'))                 # 存之前留一份上一版
+            tmp.write_text(json.dumps(K, ensure_ascii=False), encoding='utf-8'); os.replace(tmp, f)
+        except Exception as ex: return jresp({'ok': False, 'message': f'存不進去：{ex}'}, 500)
+        return jresp({'ok': True, **K})
+
     # ---- V0.3.40 🤝 握手（SortCut／FusionStitch）：右上角 Lv 畫面
     def api_hs(self, req):
         import hslink
