@@ -349,6 +349,7 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 @media (max-width:820px){.ovnav{display:none!important}}
 @media (max-width:385px){.logo{font-size:0!important;gap:0}.logo i{margin-right:0}}@media (max-width:385px) and (min-width:0){#sysFab button{padding-left:8px!important;padding-right:8px!important}}
 /* V0.3.44 提示詞區分頁＋最後送出預覽 */
+@media(min-width:1100px){.hdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px;align-items:start}.hdg>details.hgrp{grid-column:1/-1}.tkdG{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}#igd,.igdA{max-width:none}}   /* V0.3.59 平板：歷史紀錄、IG 多欄 */
 @media(min-width:1100px){#genv{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,460px);max-width:1560px;align-items:start;column-gap:18px}#genv>*{grid-column:1;min-width:0}#genv>#gjsec{grid-column:2;grid-row:1/span 40;position:sticky;top:110px;max-height:calc(100vh - 200px);overflow:auto}body.pc main,body.pc header .bar,body.pc nav{max-width:1560px}}   /* V0.3.58 平板／寬螢幕：右邊固定「製作中」 */
 .gtabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.gtabs::-webkit-scrollbar{display:none}.gtabs button{flex:1;min-width:76px;padding:9px 6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap}.gtabs button.on{background:color-mix(in srgb,var(--accent) 22%,var(--card));border-color:var(--accent);color:var(--strong)}.gtabs button[hidden]{display:none}.gtabs button small{font-weight:400;color:var(--sub);margin-left:3px}
 .gtp{display:none;margin-top:8px}.gtp.on{display:block}.gtp .gadv{margin-top:0}.gtp .gadv>summary{display:none}
@@ -1450,7 +1451,7 @@ const hDay=t=>{const d=new Date(t*1000);return d.getFullYear()+'-'+String(d.getM
 function hRender(){const shut=LS.get('hshut',{}),G=[];HJ.forEach(x=>{const k=hDay(x.t);let g=G.find(y=>y.k===k);if(!g)G.push(g={k,L:[]});g.L.push(x)});
   const today=hDay(Date.now()/1000),wk=['日','一','二','三','四','五','六'];
   $('#hl').innerHTML=G.map(g=>{const d=new Date(g.k+'T00:00:00');const nm=g.k===today?'今天':`${d.getMonth()+1}/${d.getDate()}（${wk[d.getDay()]}）`;
-    return `<details class="hday" data-day="${g.k}" ${shut[g.k]?'':'open'}><summary><b>${nm}</b> <span class="mu">${hUnits(g.L).length} 筆</span></summary>${hUnits(g.L).map(u=>u.length>1?hGroup(u):gCard(u[0],HVIEW||true)).join('')}</details>`}).join('')
+    return `<details class="hday" data-day="${g.k}" ${shut[g.k]?'':'open'}><summary><b>${nm}</b> <span class="mu">${hUnits(g.L).length} 筆</span></summary><div class="hdg">${hUnits(g.L).map(u=>u.length>1?hGroup(u):gCard(u[0],HVIEW||true)).join('')}</div></details>`}).join('')
     ||`<div class="mu" style="padding:10px 0">${HVIEW==='trash'?'回收桶是空的':HVIEW==='hidden'?'沒有隱藏的紀錄':'沒有符合的紀錄'}</div>`;
   $$('#hl details.hday').forEach(d=>d.ontoggle=()=>{const o=LS.get('hshut',{});if(d.open)delete o[d.dataset.day];else o[d.dataset.day]=1;LS.set('hshut',o)});
   $$('#hl details.hgrp').forEach(d=>{d.ontoggle=()=>{const o=LS.get('hgopen',{});if(d.open){o[d.dataset.b]=1;mgMount(d.querySelector('.mg'))}else delete o[d.dataset.b];LS.set('hgopen',o)};if(d.open)mgMount(d.querySelector('.mg'))});hSelBar()}
