@@ -2343,7 +2343,7 @@ class Engine:
                 if self.gen_q and not self.gen_active and not self.bg_hold('gen'):
                     st = self.comfy_status()
                     if not st['ok']:
-                        if not self.gen_wait: self.log.w(f'生圖：連不到 ComfyUI，{len(self.gen_q)} 個工作等它開')
+                        if not self.gen_wait: self.log.w(f'生圖：連不到 ComfyUI，{len(self.gen_q)} 個工作等它開'); self.gen_wait_t = time.time()
                         self.gen_wait = st['err'] or '連不到 ComfyUI'; self.gen_hot = None; time.sleep(3); continue
                     if self.gen_wait: self.log.w('生圖：ComfyUI 回來了，繼續'); self.gen_wait = ''
                     jid = self._gen_pick()

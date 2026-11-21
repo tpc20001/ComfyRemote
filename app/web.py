@@ -473,7 +473,7 @@ class WebServer:
     def api_gen(self, req):
         """狀態：ComfyUI 連線、工作清單；full=1 再加流程清單和設定."""
         E = self.E(); out = {'ok': True, 'comfy': E.comfy_status(), 'jobs': E.gen_jobs(int(req.q('n', '20') or 20)), 'info': E.info(), 'paused': E.bg_hold('gen'),
-                             'now': time.time(), 'wait': getattr(E, 'gen_wait', ''), 'qsum': E.gen_qsum()}
+                             'now': time.time(), 'wait': getattr(E, 'gen_wait', ''), 'wait_t': getattr(E, 'gen_wait_t', 0), 'qsum': E.gen_qsum()}
         if req.q('full'): out.update(wfs=E.gen_workflows(), wf=E.cfg.get('gen_wf'), mp=E.cfg.get('gen_mp'), spd={k: round(v[0]) for k, v in E._wf_speed().items()}, stars={r[0]: [round(r[1], 1), r[2]] for r in E.db.q('SELECT wf, AVG(vote), COUNT(*) FROM gen_jobs WHERE vote>0 AND deleted=0 GROUP BY wf')}, lineup={n: {'steps': st, 'lic': lic, 'note': note} for n, _t, st, lic, note in E.LINEUP})
         return jresp(out)
 
@@ -572,6 +572,8 @@ class WebServer:
                 J = E.gen_active.get(jid)
                 if J: J['restart'] = True
                 r = {'ok': bool(J), 'message': '中斷、清記憶體後重新排（幾秒）' if J else '這個沒有在跑'}
+            elif a == 'recheck':                                               # V0.3.45 連不到 ComfyUI：馬上再找一次
+                st = E.comfy_status(force=True); r = {'ok': st['ok'], 'message': ('✔ 連上 ComfyUI 了，繼續做' if st['ok'] else '還是連不到：' + (st.get('err') or ''))}
             elif a == 'cancel_many': r = E.gen_cancel_many(d.get('batch') or 0, bool(d.get('run')))   # V0.3.39 批量取消
             elif a == 'rerun':
                 ids = E.gen_rerun(jid, '手機', n=d.get('n') or 1); E.gen_set_batch(ids); r = {'ok': True, 'ids': ids, 'message': f'再排了 {len(ids)} 張（不同的隨機種子）'}
