@@ -929,7 +929,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     LS.set('gwf_hist',[w.name].concat(LS.get('gwf_hist',[]).filter(n=>n!==w.name)).slice(0,8));
     const SEQ=LS.get('vseq',false)&&/H3/.test(w.name)&&!/首尾幀/.test(w.name)&&p.includes('\n')?p.split('\n').map(x=>x.trim()).filter(Boolean):null;
     if(SEQ&&SEQ.length>1){body.chain={kind:'seq',wf:w.name,prompts:SEQ.slice(1).map(x=>x+KP),params:LS.get(PK(),{})}}
-    const PL0=SEQ?[SEQ[0]]:/H3|minimax/i.test(w.name)?[p]:gFinal();const PL=SEQ?PL0:PL0.length?PL0:[p];let r={ok:true},tot=0;   // 每一行一個提示詞：各排一次
+    const PL0=SEQ?[SEQ[0]]:/H3|minimax/i.test(w.name)?[p]:gFinal();let PL=SEQ?PL0:PL0.length?PL0:[p];let r={ok:true},tot=0;if(PL.some(q=>q.includes('〔🎲'))){const n=Math.max(1,+$('#gc').value||1);PL=PL.flatMap(q=>Array.from({length:n},()=>pkRoll(q))).slice(0,100);body.n=1}   // 每一行一個提示詞：各排一次
     const MP2=['兩張圖合併（INT8 快）','兩張圖合併（Qwen 快）'];const WL=gBoth()?gBigOn().map(b=>b[0]):LS.get('gboth_m',false)&&MP2.includes(w.name)&&MP2.every(n=>GWFS.some(x=>x.name===n))?MP2.slice():[w.name];   // 🔁 兩個都跑：快的先排，先看到結果
     WL.sort((a,b)=>(GSPD[a]||99)-(GSPD[b]||99));
     const FS=PL.length>1?Math.floor(Math.random()*2147483000)+1:0;   // V0.2.70 好幾種寫法一起試：用同一個種子，比較公平（差別只來自提示詞）
@@ -1914,9 +1914,10 @@ let PKT={cats:[],docs:[]},PKS=LS.get('pksel',{}),PKL=0;
 const pkId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 async function pkLoad(){try{const r=await api('/api/pkit');if(r&&r.ok){PKT={cats:r.cats||[],docs:r.docs||[]};PKL=1}}catch(e){}pkDraw();pdDraw();pkPrev()}
 async function pkSave(){try{const r=await api('/api/pkit',{cats:PKT.cats,docs:PKT.docs});if(!r.ok)toast('✖ '+(r.message||'存不進去'),4000)}catch(e){toast('✖ 連不到電腦，沒存到',4000)}}
-function pkCombos(){let C=[[]];for(const c of PKT.cats){const S=PKS[c.id]||[];const sel=c.opts.filter(o=>S.includes(o.id)).map(o=>o.t.trim());if(!sel.length)continue;   // V0.3.47「各做一張」的分類：選了幾個就做幾種
+function pkCombos(){let C=[[]];for(const c of PKT.cats){const S=PKS[c.id]||[];const sel=c.opts.filter(o=>S.includes(o.id)).map(o=>o.t.trim());if(c.rand&&c.opts.length){C=C.map(cb=>[...cb,`〔🎲${c.name}〕`]);continue}if(!sel.length)continue;   // V0.3.47「各做一張」的分類：選了幾個就做幾種
   C=c.each&&c.multi&&sel.length>1?C.flatMap(cb=>sel.map(t=>[...cb,t])):C.map(cb=>[...cb,...sel])}return C.map(x=>x.join('，'))}
 function pkSuffix(){return pkCombos()[0]||''}
+function pkRoll(q){return String(q).replace(/〔🎲([^〕]+)〕/g,(m,n)=>{const c=PKT.cats.find(x=>x.name===n);if(!c||!c.opts.length)return '';const S=PKS[c.id]||[];const L=S.length?c.opts.filter(o=>S.includes(o.id)):c.opts;return L[Math.floor(Math.random()*L.length)].t.trim()})}   // V0.3.54 🎲 每張隨機一個
 function pkJoinX(t,x){t=String(t||'').trim();if(!x)return t;if(!t)return x;return t.replace(/[，,。.、\s]+$/,'')+'，'+x}
 function pkJoin(t){return pkJoinX(t,pkSuffix())}
 function pkAll(t){return pkCombos().map(x=>pkJoinX(t,x))}
@@ -1931,7 +1932,7 @@ function pkAsk(title,val,btns,multi){return new Promise(ok=>{const o=document.cr
 function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',true);
   box.innerHTML=`<details class="gadv" id="gpkd" ${op?'open':''}><summary>🏷 提示詞積木 <span class="mu">點選項＝加在上面那段後面；不選就不加</span></summary>
   ${PKT.cats.length?'':'<div class="mu" style="font-size:13px;padding:4px 2px 8px">還沒有分類：按「＋ 新分類」建一個（例如：場景），再按它的「＋」加選項。</div>'}
-  ${PKT.cats.map(c=>{const fold=(LS.get('pkfold',{}))[c.id],ns=(PKS[c.id]||[]).length,sn=c.opts.filter(o=>(PKS[c.id]||[]).includes(o.id)).map(o=>o.t).join('、');return `<div class="pkC"><div class="pkCn" data-cn="${c.id}">${fold?'▸':'▾'} ${esc(c.name)} <small>${c.each?'📚 選幾個做幾種':c.multi?'可複選':'單選'}・${c.opts.length} 個${ns?'・選了 '+ns:''}・長按改</small>${fold&&sn?`<div class="mu" style="font-weight:400;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</div>`:''}</div>${fold?'':`<div class="pkOs">${c.opts.map(o=>`<button class="pkO${(PKS[c.id]||[]).includes(o.id)?' on':''}" data-c="${c.id}" data-o="${o.id}">${esc(o.t)}</button>`).join('')}<button class="pkAdd" data-add="${c.id}">＋</button></div>`}</div>`}).join('')}
+  ${PKT.cats.map(c=>{const fold=(LS.get('pkfold',{}))[c.id],ns=(PKS[c.id]||[]).length,sn=c.opts.filter(o=>(PKS[c.id]||[]).includes(o.id)).map(o=>o.t).join('、');return `<div class="pkC"><div class="pkCn" data-cn="${c.id}">${fold?'▸':'▾'} ${esc(c.name)} <small>${c.rand?'🎲 每張隨機':c.each?'📚 選幾個做幾種':c.multi?'可複選':'單選'}・${c.opts.length} 個${ns?'・選了 '+ns:''}・長按改</small>${fold&&sn?`<div class="mu" style="font-weight:400;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</div>`:''}</div>${fold?'':`<div class="pkOs">${c.opts.map(o=>`<button class="pkO${(PKS[c.id]||[]).includes(o.id)?' on':''}" data-c="${c.id}" data-o="${o.id}">${esc(o.t)}</button>`).join('')}<button class="pkAdd" data-add="${c.id}">＋</button></div>`}</div>`}).join('')}
   <div class="row" style="gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap"><button class="pill" id="pkNew">＋ 新分類</button><button class="pill" id="pkExp" title="積木和範本存成一個檔（備份、搬到別台電腦）">⬇ 匯出</button><button class="pill" id="pkImp">⬆ 匯入</button><input type="file" id="pkImpF" accept=".json,application/json" style="display:none"><span class="mu" style="font-size:12px">點分類名稱收合；長按分類名稱或選項：改名、編輯、刪除</span></div></details>`;
   $('#gpkd').ontoggle=()=>LS.set('gpk_o',$('#gpkd').open);
   box.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const c=PKT.cats.find(x=>x.id===b.dataset.c);if(!c)return;let S=PKS[c.id]||[];const id=b.dataset.o;
@@ -1949,7 +1950,8 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
   $('#pkNew').onclick=async()=>{const r=await pkAsk('新分類的名稱（例如：場景、上衣、動作）','',[['單選（選一個）','g'],['可複選'],['取消']]);if(r.i<0||r.i>1||!r.v.trim())return;
     PKT.cats.push({id:pkId(),name:r.v.trim(),multi:r.i===1,opts:[]});pkSave();pkDraw();toast('建好了：按它的「＋」加選項',3000)};
   pkLP(box,'[data-cn]',async el=>{const i=PKT.cats.findIndex(x=>x.id===el.dataset.cn),c=PKT.cats[i];if(!c)return;
-    const r=await pkAsk(`分類「${c.name}」`,c.name,[['✏ 改名','g'],[c.multi?'改成單選':'改成可複選'],['⬆ 往上移'],['🗑 刪除','er'],[c.each?'改回：選的全部加在同一張':'📚 選了幾個就各做一張'],['取消']]);
+    const r=await pkAsk(`分類「${c.name}」`,c.name,[['✏ 改名','g'],[c.multi?'改成單選':'改成可複選'],['⬆ 往上移'],['🗑 刪除','er'],[c.each?'改回：選的全部加在同一張':'📚 選了幾個就各做一張'],[c.rand?'取消隨機':'🎲 每張隨機一個'],['取消']]);
+    if(r.i===5){c.rand=!c.rand;pkSave();pkDraw();pkPrev();toast(c.rand?'這個分類每張隨機挑一個（有選的就從選的裡挑，沒選就全部裡挑）；「1 張」改成 5 張就是 5 種隨機':'取消隨機',4500);return}
     if(r.i===4){c.each=!c.each;if(c.each)c.multi=true;pkSave();pkDraw();pkPrev();toast(c.each?'這個分類選了幾個，就各做一張（例如 3 個場景 → 3 種）':'改回：選的全部加在同一張',3500);return}
     if(r.i===0&&r.v.trim())c.name=r.v.trim();else if(r.i===1){c.multi=!c.multi;if(!c.multi&&(PKS[c.id]||[]).length>1){PKS[c.id]=PKS[c.id].slice(0,1);LS.set('pksel',PKS)}}
     else if(r.i===2&&i>0){PKT.cats.splice(i,1);PKT.cats.splice(i-1,0,c)}else if(r.i===3){if(!confirm(`刪掉分類「${c.name}」和它的 ${c.opts.length} 個選項？`))return;PKT.cats.splice(i,1);delete PKS[c.id];LS.set('pksel',PKS)}else return;
