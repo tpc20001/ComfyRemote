@@ -224,7 +224,7 @@ def t_js():
     js = '\n'.join(re.findall(r'<script>(.*?)</script>', webpage.PAGE, re.S)); f = pathlib.Path(tempfile.mkdtemp()) / 'page.js'; f.write_text(js, encoding='utf-8')
     r = subprocess.run([node, '--check', str(f)], capture_output=True, text=True); assert r.returncode == 0, r.stderr[-800:]
     # V0.2.67 一行裡「// 註解」後面還接著程式（會被當成註解吃掉，文法檢查抓不到）
-    bad = [l.strip()[:120] for l in js.split('\n') if re.search(r"(^|[;{}\s])//\s[^`'\"]*?(LS\.set\(|\$\('|\$\$\(|api\(|toast\(|gPrev\(|gWfInfo\(|innerHTML=)", l) and '放大功能收起來' not in l]
+    bad = [l.strip()[:120] for l in js.split('\n') if re.search(r"(^|[;{}\s])//\s[^`'\"]*?(LS\.set\(|\$\('|\$\$\(|api\(|toast\(|gPrev\(|gWfInfo\(|innerHTML=|\b(?:let|const|var) [A-Za-z_$][\w$]*\s*=|\bfor\(const |\bawait )", l) and '放大功能收起來' not in l]
     assert not bad, '註解後面還有程式：' + ' ／ '.join(bad[:3])
 
 

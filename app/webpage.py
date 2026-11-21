@@ -615,9 +615,9 @@ async function gMrec(w){const box=$('#gmrec');if(!box)return;const n=w.n_img||0;
     L.addEventListener('click',async e=>{const q=e.target.closest('[data-pp]');if(!q)return;const b=await (await fetch(IMGU('people/'+q.dataset.pp),{headers:{'x-app-token':TOK}})).blob();const r=await api('/api/gen_upload',await b.arrayBuffer(),true);if(!r.ok)return toast('放不進去：'+(r.message||''));
       if(tg===0){GIMGS=[r.img];GFILES=[];LS.set('gimgs',GIMGS);gPrev()}else{GSI[tg]=[r.img];GSF[tg]=[];LS.set('gslots',GSI);gPrevSlot(tg)}toast(`✔ 人物庫的照片放進${['圖一','圖二','圖三','圖四'][tg]}`,1500)})}}
 // V0.3.15 新功能導覽：版本有大更新時，生圖頁最上面一張小卡（看過按 ✕ 就不再出現）
-const TOUR_V='0.3b';function gTour(){const b=$('#gtour');if(!b)return;if(LS.get('tour_seen','')===TOUR_V){b.innerHTML='';return}
-  b.innerHTML=`<div class="gnews" style="flex-direction:column;align-items:stretch"><div class="row"><b class="grow">✨ 新功能一覽</b><button class="pill" id="gtx">✕ 知道了</button></div>
-   <div class="mu" style="line-height:1.7;font-size:13px">① 最上面四個模式：🎨 改一張圖／🧩 合併／🎬 照片變影片／🎞 首尾幀。<br>② 改一張圖有「🧰 工具箱」29 個一鍵工具（證件照、消除、去背、貼圖組…），可以搜尋。<br>③ 照片右下角「🖌 局部」只改塗到的地方；「✂ 裁切」能擴圖、翻轉。<br>④ 做好的大圖可以「🎬 動起來」「🎞 首尾幀」「🎲 再 3 張」。<br>完整說明：設定 → 📖 使用說明。</div></div>`;
+const TOUR_V='0.4';function gTour(){const b=$('#gtour');if(!b)return;if(LS.get('tour_seen','')===TOUR_V){b.innerHTML='';return}
+  b.innerHTML=`<div class="gnews" style="flex-direction:column;align-items:stretch"><div class="row"><b class="grow">✨ 提示詞建議用法</b><button class="pill" id="gtx">✕ 知道了</button></div>
+   <div class="mu" style="line-height:1.7;font-size:13px">① 打字框：寫這次臨時想要的（例如「人物面帶笑容」）。<br>② 🏷 積木：常換的東西建成分類（場景、上衣、動作…），點選就加在後面，不選就不加。<br>③ 📚 範本：整篇很多段的存起來，點一下帶上來，每段做一次（多篇文字）。<br>④ 送出前看「📝 會送出 N 個提示詞」確認。<br>⑤ 看了前一兩張不滿意：卡片上「⏹ 取消這一批」。<br>右上角「Lv」：跟 SortCut、GoPro 分電腦效能。</div></div>`;
   $('#gtx').onclick=()=>{LS.set('tour_seen',TOUR_V);gTour()}}
 // V0.2.36 🧩 兩張圖合併：三種合法（圖一＝人物）——換衣服／換場景／照動作，點一下就填好寫得很完整的提示詞
 const GMRG=[['👗 換衣服','圖二放衣服（模特兒穿的、平拍的都可以）','讓圖1的人穿上圖2的衣服。衣服的款式、顏色、圖案、材質都要跟圖2一樣，自然合身；圖1人物的臉、五官、髮型、身材、姿勢和背景完全不變'],
@@ -855,7 +855,7 @@ function gTpl(){const box=$('#gtpl');if(!box)return;const open=LS.get('gtpl_o','
     if(open==='🏞 背景'&&!GMASK.size&&!LS.get('tip_bgmask',false)){LS.set('tip_bgmask',true);toast('小技巧：想讓人物完全不變 → 照片右下角「🖌 局部」塗人物，再按「🔁 反過來：塗的保留」，就只換背景',7000)}else toast(v?'接在後面了':'已填入（可以再改）',1200)}}
 // V0.2.12 開始按鈕上直接寫「會排幾張、大概多久」：照片數 × 張數 × 提示詞行數 × 流程數，時間用你實測的平均
 function gGoLbl(){const b=$('#ggo');if(!b||b.disabled||!GWFS.length)return;const w=gWf();if(!w.name)return;const p=($('#gp')||{}).value||'';
-  const np=w.need_img?Math.max(1,GIMGS.length+GFILES.length):1,nc=+($('#gc')||{}).value||1,nl=Math.min(50,($('#gml')&&$('#gml').checked?gSplit(p):[p]).flatMap(gExpand).length||1);
+  const np=w.need_img?Math.max(1,GIMGS.length+GFILES.length):1,nc=+($('#gc')||{}).value||1,nl=Math.max(1,/H3|minimax/i.test(w.name||'')?1:gFinal().length);
   const WL=gBoth()?gBigOn().map(x=>x[0]):[w.name];let n=0,sec=0;WL.forEach(x=>{const k=np*nc*nl;n+=k;sec+=k*(GSPD[x]||(BIG.find(y=>y[0]===x)||[])[3]||(/H3|影片/.test(x)?300:/合併/.test(x)?50:60))});
   const md=gModeOf(w.name),vb={edit:'改圖',merge:'合併',vid:'做影片',fl:'做影片'}[md]||'開始',un=md==='vid'||md==='fl'?'支':'張';const fl0=md==='fl'&&!(GSF[1]||[]).length&&!(GSI[1]||[]).length;
   const t=fl0?'▶ 先做結束畫面＋影片':(n>1||sec>=60?`▶ ${vb} · ${n} ${un} · 約 ${sec<90?Math.round(sec)+' 秒':Math.round(sec/60)+' 分'}`:`▶ ${vb}`);if(b.textContent!==t)b.textContent=t}
@@ -911,7 +911,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     const dim=u=>new Promise(ok=>{if(!u)return ok(0);const im=new Image();im.onload=()=>ok(im.naturalWidth/im.naturalHeight);im.onerror=()=>ok(0);im.src=u});const [a1,a2]=await Promise.all([dim(src(0)),dim(src(1))]);
     if(a1&&a2&&Math.abs(Math.log(a1/a2))>0.15&&!confirm(`首幀和尾幀的比例差很多（${a1>1?'橫':'直'}的 vs ${a2>1?'橫':'直'}的），影片會照首幀的比例，尾幀可能被裁掉或拉歪。\n建議兩張用一樣比例的照片（例如尾幀用改圖從首幀做出來，比例就一定一樣）。還是要開始？`))return}
   let many=w.need_img?(GFILES.length+GIMGS.length):1;for(let i=1;i<NS;i++)many*=((GSF[i]||[]).length||(GSI[i]||[]).length);
-  const NT=$('#gml')&&$('#gml').checked&&!/H3|minimax/i.test(w.name)?Math.min(50,gSplit(p0||PKX).flatMap(gExpand).length||1):1;   // V0.3.38 多篇文字
+  const NT=/H3|minimax/i.test(w.name)?1:Math.max(1,gFinal().length);   // V0.3.38 多篇文字
   if(many>1&&!confirm(NT>1?`批量：${many} 張照片 × ${NT} 篇文字 × ${$('#gc').value} 張 = ${many*NT*+$('#gc').value} 個工作。\n順序：${LS.get('gorder','txt')==='img'?'一張圖先跑完全部文字':'一篇文字先跑完全部圖'}（可以按「🔀 順序」切換）`:`批量：${many} 張照片 × ${$('#gc').value} 張 = ${many*+$('#gc').value} 個工作，都用同一段提示詞？`))return;if(!p&&!(w.cr||{}).blank_ok&&!confirm('沒有打提示詞，照流程原本的跑？'))return;
   const b=$('#ggo');b.disabled=true;try{
     if(GFILES.length&&w.need_img){const FS=GFILES.slice(),N=[];FS.forEach(f=>f._taken=true);for(let i=0;i<FS.length;i++){toast(`照片上傳中… ${i+1}／${FS.length}`,60000);let nm=null;
@@ -929,7 +929,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     LS.set('gwf_hist',[w.name].concat(LS.get('gwf_hist',[]).filter(n=>n!==w.name)).slice(0,8));
     const SEQ=LS.get('vseq',false)&&/H3/.test(w.name)&&!/首尾幀/.test(w.name)&&p.includes('\n')?p.split('\n').map(x=>x.trim()).filter(Boolean):null;
     if(SEQ&&SEQ.length>1){body.chain={kind:'seq',wf:w.name,prompts:SEQ.slice(1).map(x=>x+KP),params:LS.get(PK(),{})}}
-    const PL0=SEQ?[SEQ[0]]:$('#gml')&&$('#gml').checked&&!/H3|minimax/i.test(w.name)?(p0?gSplit(p0).map(pkJoin):(PKX?[PKX]:[])):[p];const PL=SEQ?PL0:PL0.flatMap(gExpand).slice(0,50);let r={ok:true},tot=0;   // 每一行一個提示詞：各排一次
+    const PL0=SEQ?[SEQ[0]]:/H3|minimax/i.test(w.name)?[p]:gFinal();const PL=SEQ?PL0:PL0.length?PL0:[p];let r={ok:true},tot=0;   // 每一行一個提示詞：各排一次
     const MP2=['兩張圖合併（INT8 快）','兩張圖合併（Qwen 快）'];const WL=gBoth()?gBigOn().map(b=>b[0]):LS.get('gboth_m',false)&&MP2.includes(w.name)&&MP2.every(n=>GWFS.some(x=>x.name===n))?MP2.slice():[w.name];   // 🔁 兩個都跑：快的先排，先看到結果
     WL.sort((a,b)=>(GSPD[a]||99)-(GSPD[b]||99));
     const FS=PL.length>1?Math.floor(Math.random()*2147483000)+1:0;   // V0.2.70 好幾種寫法一起試：用同一個種子，比較公平（差別只來自提示詞）
@@ -1906,8 +1906,12 @@ let PKT={cats:[],docs:[]},PKS=LS.get('pksel',{}),PKL=0;
 const pkId=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 async function pkLoad(){try{const r=await api('/api/pkit');if(r&&r.ok){PKT={cats:r.cats||[],docs:r.docs||[]};PKL=1}}catch(e){}pkDraw();pdDraw();pkPrev()}
 async function pkSave(){try{const r=await api('/api/pkit',{cats:PKT.cats,docs:PKT.docs});if(!r.ok)toast('✖ '+(r.message||'存不進去'),4000)}catch(e){toast('✖ 連不到電腦，沒存到',4000)}}
-function pkSuffix(){const out=[];for(const c of PKT.cats){const S=PKS[c.id]||[];for(const o of c.opts)if(S.includes(o.id))out.push(o.t.trim())}return out.join('，')}
-function pkJoin(t){const x=pkSuffix();t=String(t||'').trim();if(!x)return t;if(!t)return x;return t.replace(/[，,。.、\s]+$/,'')+'，'+x}
+function pkCombos(){let C=[[]];for(const c of PKT.cats){const S=PKS[c.id]||[];const sel=c.opts.filter(o=>S.includes(o.id)).map(o=>o.t.trim());if(!sel.length)continue;   // V0.3.47「各做一張」的分類：選了幾個就做幾種
+  C=c.each&&c.multi&&sel.length>1?C.flatMap(cb=>sel.map(t=>[...cb,t])):C.map(cb=>[...cb,...sel])}return C.map(x=>x.join('，'))}
+function pkSuffix(){return pkCombos()[0]||''}
+function pkJoinX(t,x){t=String(t||'').trim();if(!x)return t;if(!t)return x;return t.replace(/[，,。.、\s]+$/,'')+'，'+x}
+function pkJoin(t){return pkJoinX(t,pkSuffix())}
+function pkAll(t){return pkCombos().map(x=>pkJoinX(t,x))}
 function pkLP(root,sel,fn){root.querySelectorAll(sel).forEach(el=>{let tm=0,x0=0,y0=0;const c=()=>clearTimeout(tm);
   el.addEventListener('pointerdown',e=>{x0=e.clientX;y0=e.clientY;el._lp=0;tm=setTimeout(()=>{el._lp=1;try{navigator.vibrate&&navigator.vibrate(25)}catch(_){}fn(el)},550)});
   el.addEventListener('pointerup',c);el.addEventListener('pointercancel',c);el.addEventListener('pointerleave',c);el.addEventListener('pointermove',e=>{if(Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>12)c()});
@@ -1919,7 +1923,7 @@ function pkAsk(title,val,btns,multi){return new Promise(ok=>{const o=document.cr
 function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',true);
   box.innerHTML=`<details class="gadv" id="gpkd" ${op?'open':''}><summary>🏷 提示詞積木 <span class="mu">點選項＝加在上面那段後面；不選就不加</span></summary>
   ${PKT.cats.length?'':'<div class="mu" style="font-size:13px;padding:4px 2px 8px">還沒有分類：按「＋ 新分類」建一個（例如：場景），再按它的「＋」加選項。</div>'}
-  ${PKT.cats.map(c=>`<div class="pkC"><div class="pkCn" data-cn="${c.id}">${esc(c.name)} <small>${c.multi?'可複選':'單選'}・長按改</small></div><div class="pkOs">${c.opts.map(o=>`<button class="pkO${(PKS[c.id]||[]).includes(o.id)?' on':''}" data-c="${c.id}" data-o="${o.id}">${esc(o.t)}</button>`).join('')}<button class="pkAdd" data-add="${c.id}">＋</button></div></div>`).join('')}
+  ${PKT.cats.map(c=>`<div class="pkC"><div class="pkCn" data-cn="${c.id}">${esc(c.name)} <small>${c.each?'📚 選幾個做幾種':c.multi?'可複選':'單選'}・長按改</small></div><div class="pkOs">${c.opts.map(o=>`<button class="pkO${(PKS[c.id]||[]).includes(o.id)?' on':''}" data-c="${c.id}" data-o="${o.id}">${esc(o.t)}</button>`).join('')}<button class="pkAdd" data-add="${c.id}">＋</button></div></div>`).join('')}
   <div class="row" style="gap:8px;margin-top:6px;align-items:center"><button class="pill" id="pkNew">＋ 新分類</button><span class="mu" style="font-size:12px">長按分類名稱或選項：改名、編輯、刪除</span></div></details>`;
   $('#gpkd').ontoggle=()=>LS.set('gpk_o',$('#gpkd').open);
   box.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const c=PKT.cats.find(x=>x.id===b.dataset.c);if(!c)return;let S=PKS[c.id]||[];const id=b.dataset.o;
@@ -1929,7 +1933,8 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
   $('#pkNew').onclick=async()=>{const r=await pkAsk('新分類的名稱（例如：場景、上衣、動作）','',[['單選（選一個）','g'],['可複選'],['取消']]);if(r.i<0||r.i>1||!r.v.trim())return;
     PKT.cats.push({id:pkId(),name:r.v.trim(),multi:r.i===1,opts:[]});pkSave();pkDraw();toast('建好了：按它的「＋」加選項',3000)};
   pkLP(box,'[data-cn]',async el=>{const i=PKT.cats.findIndex(x=>x.id===el.dataset.cn),c=PKT.cats[i];if(!c)return;
-    const r=await pkAsk(`分類「${c.name}」`,c.name,[['✏ 改名','g'],[c.multi?'改成單選':'改成可複選'],['⬆ 往上移'],['🗑 刪除','er'],['取消']]);
+    const r=await pkAsk(`分類「${c.name}」`,c.name,[['✏ 改名','g'],[c.multi?'改成單選':'改成可複選'],['⬆ 往上移'],['🗑 刪除','er'],[c.each?'改回：選的全部加在同一張':'📚 選了幾個就各做一張'],['取消']]);
+    if(r.i===4){c.each=!c.each;if(c.each)c.multi=true;pkSave();pkDraw();pkPrev();toast(c.each?'這個分類選了幾個，就各做一張（例如 3 個場景 → 3 種）':'改回：選的全部加在同一張',3500);return}
     if(r.i===0&&r.v.trim())c.name=r.v.trim();else if(r.i===1){c.multi=!c.multi;if(!c.multi&&(PKS[c.id]||[]).length>1){PKS[c.id]=PKS[c.id].slice(0,1);LS.set('pksel',PKS)}}
     else if(r.i===2&&i>0){PKT.cats.splice(i,1);PKT.cats.splice(i-1,0,c)}else if(r.i===3){if(!confirm(`刪掉分類「${c.name}」和它的 ${c.opts.length} 個選項？`))return;PKT.cats.splice(i,1);delete PKS[c.id];LS.set('pksel',PKS)}else return;
     pkSave();pkDraw();pkPrev()});
@@ -1937,7 +1942,7 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
     const r=await pkAsk(`「${c.name}」的選項`,o.t,[['✏ 存','g'],['⬅ 往前移'],['🗑 刪除','er'],['取消']]);
     if(r.i===0&&r.v.trim())o.t=r.v.trim();else if(r.i===1&&j>0){c.opts.splice(j,1);c.opts.splice(j-1,0,o)}else if(r.i===2){c.opts.splice(j,1);PKS[c.id]=(PKS[c.id]||[]).filter(x=>x!==o.id);LS.set('pksel',PKS)}else return;
     pkSave();pkDraw();pkPrev()})}
-function gFinal(){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml=$('#gml')&&$('#gml').checked,x=pkSuffix();const B=ml?(t?gSplit(t):[]):(t?[t]:[]);const L=(B.length?B:(x?['']:[])).map(pkJoin).filter(Boolean);return L.flatMap(gExpand).slice(0,50)}
+function gFinal(noML){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml=!noML&&$('#gml')&&$('#gml').checked,x=pkSuffix();const B=ml?(t?gSplit(t):[]):(t?[t]:[]);const L=(B.length?B:(x?['']:[])).flatMap(pkAll).filter(Boolean);return (noML?L.slice(0,1):L).flatMap(gExpand).slice(0,50)}
 function pkPrev(){const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
   if(!L.length){e.innerHTML='';return}if(L.length===1&&!x&&!/\{[^{}]*\|/.test(t)){e.innerHTML='';return}   // 只有自己打的一句：不用再顯示一次
   const op=LS.get('gfin_o',L.length<=3),hl=s=>{let h=esc(s);if(x)h=h.replace(esc(x),`<i>${esc(x)}</i>`);return h};

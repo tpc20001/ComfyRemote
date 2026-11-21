@@ -689,7 +689,7 @@ class WebServer:
         d = req.json() or {}
         cats = d.get('cats'); docs = d.get('docs')
         if not isinstance(cats, list) or not isinstance(docs, list): return jresp({'ok': False, 'message': '格式不對'}, 400)
-        K = {'cats': [{'id': str(c.get('id') or ''), 'name': str(c.get('name') or '')[:40], 'multi': bool(c.get('multi')),
+        K = {'cats': [{'id': str(c.get('id') or ''), 'name': str(c.get('name') or '')[:40], 'multi': bool(c.get('multi')), 'each': bool(c.get('each')),
                        'opts': [{'id': str(o.get('id') or ''), 't': str(o.get('t') or '')[:2000]} for o in (c.get('opts') or [])[:300] if str(o.get('t') or '').strip()]}
                       for c in cats[:100] if str(c.get('name') or '').strip()],
              'docs': [{'id': str(x.get('id') or ''), 'title': str(x.get('title') or '')[:80], 'text': str(x.get('text') or '')[:60000], 't': float(x.get('t') or 0)}
