@@ -31,8 +31,16 @@ def state():
     E = _S['ctx'].get('eng'); a = q = 0
     try: a = len(E.gen_active); q = len(E.gen_q)
     except Exception: pass
-    P3 = HS.policy3()
-    return {'on': True, 'want': 2 if (a or q) else 0, 'prio': 5, 'lv': P3['lv'].get(APP, 10),
+    P3 = HS.policy3(); need = {}
+    if a or q:                                                                  # V0.3.42 規則第 4 版：ComfyUI 缺顯示卡記憶體／卡住 → 請別的程式放掉顯示卡
+        try:
+            v = (E.comfy_status() or {}).get('vram') or [None, None]
+            vf = (v[0] or 0) / 2**30 if v[0] is not None else None
+            st = any(J.get('stall') for J in list(E.gen_active.values()))
+            if (vf is not None and vf < 1.0) or st:
+                need = {'starved': True, 'vram_free_gb': round(vf, 2) if vf is not None else None, 'why': 'ComfyUI 卡住沒進度' if st else f'顯示卡記憶體只剩 {vf:.1f} GB'}
+        except Exception: pass
+    return {'on': True, 'want': 2 if (a or q) else 0, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'need': need,
             'what': (f'生圖：正在做 {a} 張' + (f'、排隊 {q} 張' if q else '')) if (a or q) else '', 'use': {}, 'max': {}}
 
 

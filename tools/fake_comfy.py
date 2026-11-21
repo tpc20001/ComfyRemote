@@ -41,6 +41,8 @@ def run_prompt(pid, prompt, cid):
                 if pid in STATE['interrupt']:
                     ws_send(cid, {'type': 'execution_interrupted', 'data': {'prompt_id': pid}})
                     STATE['hist'][pid] = {'outputs': {}, 'status': {'status_str': 'error', 'completed': False, 'messages': [['execution_interrupted', {}]]}}; return
+                while STATE.get('hang') and pid not in STATE['interrupt']: time.sleep(0.05)   # 假裝卡住（沒有進度）
+                if pid in STATE['interrupt']: STATE['hist'][pid] = {'outputs': {}, 'status': {'status_str': 'error', 'completed': False, 'messages': [['execution_interrupted', {}]]}}; return
                 time.sleep(STATE['step_sec']); ws_send(cid, {'type': 'progress', 'data': {'value': i, 'max': 4, 'prompt_id': pid, 'node': '10'}})
             outs = {k: {'images': [{'filename': f'ComfyUI_{pid[:6]}_.png', 'subfolder': '', 'type': 'output'}]} for k, v in prompt.items() if v.get('class_type') in ('SaveImage', 'PreviewImage')}
             outs.update({k: {'images': [{'filename': f'anim_{pid[:6]}.mp4', 'subfolder': 'ComfyRemote', 'type': 'output'}], 'animated': [True]} for k, v in prompt.items() if v.get('class_type') == 'SaveVideo'})
@@ -100,6 +102,7 @@ class H(BaseHTTPRequestHandler):
             bad = [k for k, v in p.items() for x in v.get('inputs', {}).values() if isinstance(x, list) and len(x) == 2 and str(x[0]) not in p]
             if bad: return self._j({'error': {'type': 'prompt_outputs_failed_validation', 'message': 'bad link'}, 'node_errors': {bad[0]: {'class_type': '?', 'errors': [{'message': 'missing input', 'details': ''}]}}}, 400)
             pid = str(uuid.uuid4()); STATE['prompts'].append(p)
+            if STATE.get('lose', 0) > 0: STATE['lose'] -= 1; return self._j({'prompt_id': pid, 'number': len(STATE['prompts']), 'node_errors': {}})   # 假裝 ComfyUI 重開、弄丟這個工作
             threading.Thread(target=run_prompt, args=(pid, p, j.get('client_id', '')), daemon=True).start(); return self._j({'prompt_id': pid, 'number': len(STATE['prompts']), 'node_errors': {}})
         if u.path == '/interrupt':
             if STATE['running']: STATE['interrupt'].add(STATE['running'])

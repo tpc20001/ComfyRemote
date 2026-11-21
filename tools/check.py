@@ -194,16 +194,17 @@ def t_hs():
         H.set_policy3('t', members=[], lv={'SortCut': 3}); assert A(FusionStitch=2, SortCut=2)['SortCut'] == 30
         H.set_policy3('t', on=False); d = H.decide_with({'app': 'SortCut', 'want': 2, 'on': True}, [{'app': 'FusionStitch', 'want': 2}]); assert d['mode'] == 'split'   # 關掉第 3 版 → 第 2 版
         H.set_policy3('t', on=True, lv={'SortCut': 10})
+        d = H.decide_with({'app': 'SortCut', 'want': 2, 'on': True}, [{'app': 'ComfyRemote', 'want': 2, 'need': {'starved': True, 'vram_free_gb': 0.3}}]); assert d['release'] and d['no_new_heavy'] and d['cpu_cap'] == 5   # 第 4 版：缺顯示卡記憶體 → 放掉
         H.set_policy(by='FS', share={'FusionStitch': 40}); assert H.policy3()['on'] and H.policy3()['lv']['SortCut'] == 10   # 舊版改 policy.json 不會弄掉第 3 版的設定
         import hslink, types
         E = types.SimpleNamespace(gen_active={1: {}}, gen_q=[2, 3], log=types.SimpleNamespace(w=lambda m: None))
         hslink._S['hs'] = None; hs = hslink.bind(eng=E, ver='0.3.40', port=0)
         try:
             hs.write(); I = hslink.info(); me = [a for a in I['apps'] if a['app'] == 'ComfyRemote'][0]
-            assert I['ok'] and me['want'] == 2 and '排隊 2 張' in me['what'] and I['rules'] == 3, I
+            assert I['ok'] and me['want'] == 2 and '排隊 2 張' in me['what'] and I['rules'] == 4, I
             r = hslink.set_({'members': ['ComfyRemote', 'FusionStitch', 'SortCut', 'TikLive']}); assert r['p3']['members'] == []   # 全勾＝看到誰算誰
             r = hslink.set_({'lv': {'ComfyRemote': 7}, 'reserve': 15}); assert r['lv'] == 7 and r['p3']['reserve'] == 15
-            assert (H.lib_dir() / 'app_handshake_r3.py').exists() or (time.sleep(2.5) or (H.lib_dir() / 'app_handshake_r3.py').exists())   # 放進 lib：別的程式自動用新規則
+            assert (H.lib_dir() / 'app_handshake_r4.py').exists() or (time.sleep(2.5) or (H.lib_dir() / 'app_handshake_r4.py').exists())   # 放進 lib：別的程式自動用新規則
         finally: hslink.stop()
     finally:
         if old is None: os.environ.pop('LOCALAPPDATA', None)
@@ -245,6 +246,26 @@ def t_gen():
         time.sleep(0.2)
         if all(j['state'] in ('done', 'fail') for j in E.gen_jobs()): break
     J = E.gen_jobs(); assert all(j['state'] == 'done' and j['outs'] for j in J), J
+    # V0.3.42 ComfyUI 弄丟工作（重開／更新過）→ 很快重新送出；卡住沒進度 → 提醒＋自動中斷、清記憶體、重排
+    E.cfg.set('gen_lost_check_sec', 0.5); F.STATE['lose'] = 1; n0 = len(F.STATE['prompts'])
+    (lj,) = E.gen_add('GROK 改圖', '弄丟測試', img)
+    for _ in range(100):
+        time.sleep(0.2)
+        if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (lj,))[0] in ('done', 'fail'): break
+    assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (lj,))[0] == 'done' and len(F.STATE['prompts']) - n0 == 2, '弄丟的工作沒有重新送出'
+    E.cfg.set('gen_stall_min', 0.02); E.cfg.set('gen_stall_auto_min', 0.06); F.STATE['hang'] = True
+    (sj,) = E.gen_add('GROK 改圖', '卡住測試', img); seen = False
+    for _ in range(100):
+        time.sleep(0.1); A = E.gen_active.get(sj) or {}
+        if A.get('stall'): seen = True; assert '沒有進度' in A.get('msg', '')
+        if (getattr(E, 'gen_restarted', {}) or {}).get(sj): break
+    F.STATE['hang'] = False; assert seen and E.gen_restarted.get(sj), '卡住沒有提醒／沒有自動重來'
+    for _ in range(100):
+        time.sleep(0.2)
+        if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (sj,))[0] in ('done', 'fail'): break
+    assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (sj,))[0] == 'done', '重排後沒有做完'
+    E.cfg.set('gen_stall_min', 8); E.cfg.set('gen_stall_auto_min', 20); E.cfg.set('gen_lost_check_sec', 15)
+    print('    ✔ ComfyUI 弄丟工作 → 重新送出；卡住 → 提醒、自動中斷清記憶體重排')
     i2 = E.gen_save_input(F.png(9, 9), 't2')
     try: E.gen_add('兩張圖合併', 'x', img); raise AssertionError('只給一張也收了')
     except comfy.ComfyError: pass

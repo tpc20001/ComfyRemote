@@ -568,6 +568,10 @@ class WebServer:
         E = self.E(); d = req.json(); a = d.get('a'); jid = d.get('id')
         try:
             if a == 'cancel': r = {'ok': E.gen_cancel(jid)}
+            elif a == 'restart':                                               # V0.3.42 卡住：中斷、清記憶體、放回排隊
+                J = E.gen_active.get(jid)
+                if J: J['restart'] = True
+                r = {'ok': bool(J), 'message': '中斷、清記憶體後重新排（幾秒）' if J else '這個沒有在跑'}
             elif a == 'cancel_many': r = E.gen_cancel_many(d.get('batch') or 0, bool(d.get('run')))   # V0.3.39 批量取消
             elif a == 'rerun':
                 ids = E.gen_rerun(jid, '手機', n=d.get('n') or 1); E.gen_set_batch(ids); r = {'ok': True, 'ids': ids, 'message': f'再排了 {len(ids)} 張（不同的隨機種子）'}

@@ -1,4 +1,4 @@
-"""🤝 程式握手（apphs/1，規則第 3 版）：同一台電腦上的幾個程式互相說「我現在要做什麼、用了多少」，誰需要就讓誰先跑。
+"""🤝 程式握手（apphs/1，規則第 4 版）：同一台電腦上的幾個程式互相說「我現在要做什麼、用了多少」，誰需要就讓誰先跑。
 
 這個檔是共用的：SortCut 和 FusionStitch 用的是同一份，**整個檔直接複製過去就能用**（只用 Python 標準函式庫、沒有 Qt）。
 完整規則看 HANDSHAKE_握手協定.md。
@@ -31,6 +31,13 @@
       boost        它在做事（want ≥ 2）時拿幾 %（預設 80），其他在做重工作的各拿 boost_others（預設 5）：80＋5＋5＋10
       lv           每個程式自己的上限 Lv 1～10（右上角 Lv 畫面設的）：cpu_cap 不超過 Lv × 10 %
   * decide_with 回傳的欄位跟第 2 版一樣，cpu_cap 一律有值（照上面算出來的 %），另外多 lv／alloc（每個程式現在分到幾 %）／members。
+
+規則第 4 版（ComfyRemote V0.3.42）：CPU 讓了，顯示卡記憶體（VRAM）和 RAM 不會跟著讓 → ComfyUI 卡住。
+  * 最優先的程式在狀態裡多寫 need：{'starved': true, 'vram_free_gb': 0.4, 'why': '…'}（它在做事，但顯示卡記憶體不夠／卡住沒進度）。
+  * 這時其他程式的 decide() 多回 release＝True、no_new_heavy＝True：
+      - 新的重工作（尤其用顯示卡的：NVENC 編碼、NVDEC 解碼、CUDA 拼接）先不開；
+      - release＝True：正在跑、而且「可以重來」的顯示卡工作先停掉放回排隊（FFmpeg 關掉就會把顯示卡記憶體還回去；
+        暫停／降優先不會還），等 release 變回 False 再接著做。不能重來的就照 5% 慢慢跑。
 """
 import json
 import os
@@ -40,7 +47,7 @@ import time
 from pathlib import Path
 
 PROTO = 'apphs/1'
-RULES = 3              # 規則版本：改 decide 的規則就加 1（越大越新）
+RULES = 4              # 規則版本：改 decide 的規則就加 1（越大越新）
 EVERY = 2.0            # 幾秒寫一次
 STALE = 10.0           # 幾秒沒更新算不在
 LOSE_CPU = 20.0        # 讓路的那邊：重工作最多用整台 CPU 的 %
@@ -243,7 +250,10 @@ def alloc3(states, P3=None):
         cb = min(P3['boost'], lv(B), budget - o * len(others)); rest = budget - cb
         W = {a: max(o, min(lv(a), rest * P3['normal'].get(a, 45) / max(1.0, sum(P3['normal'].get(x, 45) for x in others)) if cb < P3['boost'] else o)) for a in others}
         out[B] = {'cap': round(cb, 1), 'mode': 'lead', 'why': f'這邊最優先：{cb:.0f}%（其他的各 {o:.0f}%，留 {P3["reserve"]:.0f}% 給你）'}
-        for a in others: out[a] = {'cap': round(W[a], 1), 'mode': 'yield', 'why': f'{B} 在做事、最優先 → 這邊 {W[a]:.0f}%'}
+        nd = dict(S[B].get('need') or {}); rel = bool(nd.get('starved'))                   # 第 4 版：最優先的程式缺顯示卡記憶體 → 其他的放掉顯示卡
+        for a in others: out[a] = {'cap': round(W[a], 1), 'mode': 'yield', 'release': rel,
+                                   'why': f'{B} 在做事、最優先 → 這邊 {W[a]:.0f}%' + (f'；它缺顯示卡記憶體（{nd.get("why") or "剩 " + str(nd.get("vram_free_gb", "?")) + " GB"}）→ 先停掉用顯示卡的工作、放回排隊' if rel else '')}
+        if rel: out[B]['why'] += '；顯示卡記憶體不夠，請其他程式放掉顯示卡'
     elif len(heavy) > 1:                                                         # 平常：照 normal 的權重分
         tot = sum(P3['normal'].get(a, 45) for a in heavy)
         for a in heavy:
@@ -276,7 +286,7 @@ def decide_with(me, P, pol=None, idle=None):
     cap = float(mine['cap'])
     return {**base, 'mode': mine['mode'], 'peer': (top.get('name') or top.get('app')) if top else '', 'peer_want': int(top.get('want') or 0) if top else 0,
             'peer_what': (top or {}).get('what', ''), 'cpu_cap': cap, 'share': cap, 'nvenc_cap': max(1, int(round(mx_nv * cap / 100.0))),
-            'no_new_heavy': False, 'why': mine['why'], 'alloc': {a: v['cap'] for a, v in A.items()}}
+            'no_new_heavy': bool(mine.get('release')), 'release': bool(mine.get('release')), 'why': mine['why'], 'alloc': {a: v['cap'] for a, v in A.items()}}
 
 
 # ---------------------------------------------------------------- 🆙 誰新就用誰的規則
@@ -341,7 +351,7 @@ class Handshake:
                 'host': os.environ.get('COMPUTERNAME', ''), 't': time.time(), 'on': S.get('on', True) is not False,
                 'want': max(0, min(3, int(S.get('want') or 0))), 'prio': max(0, min(10, int(S.get('prio') if S.get('prio') is not None else 5))),
                 'what': str(S.get('what') or '')[:120], 'use': dict(S.get('use') or {}), 'max': dict(S.get('max') or {}),
-                'rules': int(getattr(m, 'RULES', RULES)) if m else RULES, 'rules_own': RULES, 'lv': S.get('lv'),
+                'rules': int(getattr(m, 'RULES', RULES)) if m else RULES, 'rules_own': RULES, 'lv': S.get('lv'), 'need': dict(S.get('need') or {}),
                 'mode': (self.decide().get('mode') if self.me else 'alone')}
 
     def write(self):

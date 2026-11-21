@@ -1,3 +1,25 @@
+# 🤝 規則第 4 版（ComfyRemote V0.3.42）：讓 CPU 不夠，還要讓「顯示卡記憶體」
+
+> **給 SortCut 和 FusionStitch 的 AI**：用這包的 `app/app_handshake.py` 覆蓋（RULES＝4）。第 3 版的一切照舊，多一件事。
+
+**為什麼**：使用者實際遇到：ComfyRemote 排了 14 張，ComfyUI 開著卻不動；那時另外兩個程式已經照第 3 版降到 5% CPU，
+但**顯示卡記憶體 96%、NVENC 100%、RAM 85%**。CPU 上限不會讓出顯示卡記憶體：FFmpeg 的 NVENC／NVDEC、CUDA 拼接只要還開著，
+就一直佔著顯示卡記憶體（每條幾百 MB 到 1 GB 以上），ComfyUI（RTX 3060 只有 12 GB）就只能把模型擠到 RAM、甚至硬碟，慢到像當掉。
+
+**協定**：
+- ComfyRemote 在狀態檔多寫 `need`：`{"starved": true, "vram_free_gb": 0.4, "why": "顯示卡記憶體只剩 0.4 GB"}`
+  （它有工作在做，而且 ComfyUI 回報顯示卡記憶體 < 1 GB，或跑到一半很久沒進度）。
+- 這時你的 `decide()` 會回 `release: true`、`no_new_heavy: true`（`cpu_cap` 照舊 5%）。
+- 你要做的：
+  1. `no_new_heavy`：新的重工作先不開（你們本來就有）。
+  2. **`release`（新）**：正在跑的「用顯示卡、而且可以重來」的工作 → 停掉、放回排隊最前面（關掉 FFmpeg 才會把顯示卡記憶體還回去；
+     暫停、降優先、Job Object 限 CPU 都不會還）。轉到一半的可以從頭重轉，或你們有分段就從那一段接。
+     不能重來的就照 5% 慢慢跑。畫面上寫「讓顯示卡記憶體給 ComfyUI」。
+  3. `release` 變回 `false`（ComfyUI 做完或記憶體夠了）→ 照「慢慢放回來」接著做。
+- 狀態檔請也寫你自己用了多少顯示卡記憶體：`use.vram_gb`（PDH「GPU Process Memory → Dedicated Usage」加總你和子程式），給對方畫面顯示。
+
+---
+
 # 🤝 程式握手協定 apphs/1・規則第 3 版（ComfyRemote ⇄ FusionStitch ⇄ SortCut）
 
 > **給 SortCut 和 FusionStitch 的 AI（第 3 版，ComfyRemote V0.3.40 帶來的）**

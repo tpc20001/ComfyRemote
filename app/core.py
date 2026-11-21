@@ -48,6 +48,8 @@ DEFAULTS = {
     'comfy_url': '',                             # 空的＝自動找（Desktop 8000、免安裝版 8188）
     'gen_wf': 'GROK 改圖',                        # 預設用哪個流程（Data\workflows\<名稱>.json）
     'gen_timeout_min': 60,                       # 一張超過幾分鐘算失敗
+    'gen_stall_min': 8,                          # V0.3.42 跑到一半幾分鐘沒有任何進度 → 提醒（多半是記憶體不夠，ComfyUI 卡住）
+    'gen_stall_auto_min': 20,                    # 卡住幾分鐘自動「中斷＋清記憶體＋重排」一次（0＝不要自動）
     'gen_mp': 2.0,                               # 手機上傳前縮成幾百萬像素（0＝原圖）
     'gen_last': {},                              # 電腦版上次填的（提示詞、流程…）
     'gen_preset_done': False,
@@ -2171,7 +2173,7 @@ class Engine:
         for r in rows:
             d = self._row(r); J = self.gen_active.get(d['id'])
             if J:
-                d.update(state='run', pct=J.get('pct'), msg=J.get('msg', ''), step=J.get('step'), max=J.get('max'), t_start=J.get('t_start') or 0,
+                d.update(state='run', stall=bool(J.get('stall')), pct=J.get('pct'), msg=J.get('msg', ''), step=J.get('step'), max=J.get('max'), t_start=J.get('t_start') or 0,
                          ndone=J.get('ndone') or 0, ncached=J.get('ncached') or 0, ntot=J.get('ntot') or 0, seg=J.get('seg') or 0, nseg=J.get('nseg') or 0)
             elif d['state'] == 'wait' and d['id'] in Q:
                 d['qpos'] = Q.index(d['id']) + 1
@@ -2366,14 +2368,49 @@ class Engine:
             dead = time.time() + max(1, int(self.cfg.get('gen_timeout_min') or 60)) * 60; last_h = 0; fin = False; fin_t = 0; H = None; started = False
             pre = f'第 {J["seg"]}／{J["nseg"] or "?"} 段 · ' if J.get('seg') else ''
             J['msg'] = pre + '送出了，等 ComfyUI…'
+            act_t = time.time(); last_q = time.time(); lost = 0; J.pop('stall', None)
+            stall_min = float(self.cfg.get('gen_stall_min') or 8); auto_min = float(self.cfg.get('gen_stall_auto_min') or 0)
+            if re.search(r'H3|影片|video', J.get('wf') or '', re.I): stall_min *= 2; auto_min *= 1.5   # 影片一步比較久
             while True:
                 if J.get('cancel') or self.stop_all: C.cancel(pid); raise InterruptedError
+                # V0.3.42 卡住的處理：①ComfyUI 弄丟這個工作（重開／更新過）→ 馬上重新送出，不用等 60 分鐘 ②很久沒進度 → 提醒、可以按「中斷重來」，太久自動重來一次
+                if time.time() - last_q > float(self.cfg.get('gen_lost_check_sec') or 15) and not fin:
+                    last_q = time.time()
+                    try:
+                        q = C.queue(); ids = {x[1] for k in ('queue_running', 'queue_pending') for x in (q.get(k) or []) if len(x) > 1}
+                        if pid in ids: lost = 0
+                        elif not C.history(pid):
+                            lost += 1
+                            if lost >= 2: raise comfy.ComfyDown('ComfyUI 裡找不到這個工作了（多半重開或更新過），重新送出')
+                    except comfy.ComfyDown as ex:
+                        if 'ComfyUI 裡找不到' in str(ex): raise
+                    except Exception: pass
+                idle_m = (time.time() - act_t) / 60
+                if started and idle_m >= stall_min and not J.get('stall'):
+                    J['stall'] = time.time(); info = ''
+                    try:
+                        ss = C.get_json('/system_stats', timeout=8) or {}; dv = (ss.get('devices') or [{}])[0]; sy = ss.get('system') or {}
+                        info = f"（顯示卡記憶體剩 {(dv.get('vram_free') or 0) / 2**30:.1f}／{(dv.get('vram_total') or 0) / 2**30:.0f} GB、RAM 剩 {(sy.get('ram_free') or 0) / 2**30:.1f}／{(sy.get('ram_total') or 0) / 2**30:.0f} GB）"
+                    except Exception: info = '（ComfyUI 連問狀態都沒回：多半記憶體不夠，在用硬碟當記憶體）'
+                    J['stall_info'] = info; J['msg'] = pre + f'⚠ {idle_m:.0f} 分鐘沒有進度{info}'; self.log.w(f'生圖：#{jid} ComfyUI {idle_m:.0f} 分鐘沒有進度{info}')
+                if J.get('restart') or (started and auto_min and idle_m >= auto_min and not J.get('auto_rs')):
+                    why = '你按了中斷重來' if J.get('restart') else f'{idle_m:.0f} 分鐘沒有進度，自動中斷、清記憶體、重排'
+                    self.log.w(f'生圖：#{jid} {why}'); J['auto_rs'] = True
+                    try: C.cancel(pid)
+                    except Exception: pass
+                    try: C.free(); self._last_wf = None
+                    except Exception: pass
+                    self.gen_restarted = getattr(self, 'gen_restarted', {}); self.gen_restarted[jid] = self.gen_restarted.get(jid, 0) + 1
+                    J['requeue'] = True; J.pop('restart', None); raise InterruptedError
                 if time.time() > dead: C.cancel(pid); raise comfy.ComfyError(f'超過 {self.cfg.get("gen_timeout_min")} 分鐘還沒好，先停掉')
                 m = None
                 if ws is not None:
                     try: m = ws.recv(1.0)
                     except Exception: ws.close(); ws = None
                 else: time.sleep(1.0)
+                if isinstance(m, dict) and (m.get('type') == '_preview' or (m.get('data') or {}).get('prompt_id') == pid):
+                    if J.get('stall') and m.get('type') in ('progress', 'executing'): J.pop('stall', None)
+                    act_t = time.time()
                 if isinstance(m, dict) and m.get('type') == '_preview':
                     if started: J['_pv'] = (time.time(), m['data']['img'])   # 最新一張預覽（只放記憶體）
                     continue
@@ -2686,6 +2723,7 @@ class Engine:
                 self.db.x("UPDATE gen_jobs SET state='wait', msg='' WHERE id=?", (jid,))
                 with self.lock: self.gen_q.appendleft(jid)
                 self.done(t, 'stop', '停止（放回排隊）')
+                if (getattr(self, 'gen_restarted', {}) or {}).get(jid): self.db.x("UPDATE gen_jobs SET msg='卡住了，清掉記憶體重新排' WHERE id=?", (jid,))
             elif self.stop_all: self.done(t, 'stop', '關程式，下次接著做')
             else: self.db.x("UPDATE gen_jobs SET state='stop', msg='已取消', t1=? WHERE id=?", (time.time(), jid)); self.done(t, 'stop', '已取消')
         except comfy.ComfyDown as ex:                                       # ComfyUI 關掉了：放回排隊最前面，等它回來
