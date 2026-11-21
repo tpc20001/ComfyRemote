@@ -348,6 +348,10 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .ovbot button:active{background:rgba(139,92,246,.55)}.ovbot button:disabled{opacity:.3}.ovbot span{min-width:64px;text-align:center;color:#ccc;font-size:13px}
 @media (max-width:820px){.ovnav{display:none!important}}
 @media (max-width:385px){.logo{font-size:0!important;gap:0}.logo i{margin-right:0}}@media (max-width:385px) and (min-width:0){#sysFab button{padding-left:8px!important;padding-right:8px!important}}
+/* V0.3.44 提示詞區分頁＋最後送出預覽 */
+.gtabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.gtabs::-webkit-scrollbar{display:none}.gtabs button{flex:1;min-width:76px;padding:9px 6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap}.gtabs button.on{background:color-mix(in srgb,var(--accent) 22%,var(--card));border-color:var(--accent);color:var(--strong)}.gtabs button[hidden]{display:none}.gtabs button small{font-weight:400;color:var(--sub);margin-left:3px}
+.gtp{display:none;margin-top:8px}.gtp.on{display:block}.gtp .gadv{margin-top:0}.gtp .gadv>summary{display:none}
+.gfin{margin-top:8px;border:1px solid var(--line);border-radius:12px;padding:8px 10px;font-size:13.5px;background:var(--card)}.gfin .h{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.gfin .h b{flex:1 1 100%;color:var(--strong);white-space:nowrap}.gfin ol{margin:6px 0 0;padding-left:22px}.gfin li{margin:3px 0;word-break:break-word}.gfin li i{font-style:normal;color:var(--accent)}
 /* V0.3.41 🏷 提示詞積木／📚 整篇範本 */
 .pkC{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--card)}.pkCn{font-weight:700;font-size:13.5px;color:var(--strong);margin-bottom:6px;user-select:none;-webkit-user-select:none}.pkCn small{font-weight:400;color:var(--sub)}
 .pkOs{display:flex;flex-wrap:wrap;gap:6px}.pkO{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:6px 12px;font-size:14px;max-width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.pkO.on{background:var(--accent);border-color:var(--accent);color:#fff}.pkAdd{border:1px dashed var(--line);background:transparent;color:var(--sub);border-radius:999px;padding:6px 12px}
@@ -990,9 +994,12 @@ async function rGen(again){if(again)return gJobs();
   <div id="gpicks" class="gpicks"><div id="gpick" class="drop"></div></div><input type="file" id="gf" accept="image/*" multiple style="display:none"><input type="file" id="gf2" multiple style="display:none">
   <div class="gsrc" id="gfolder"><button class="gchip" id="gf2b">📁 從資料夾選</button><button class="gchip" id="gfvb">🎞 從影片挑格</button><button class="gchip" id="grcb">🕘 最近用過</button></div><div class="crec" id="grec"></div><div id="gmrec"></div><input type="file" id="gfv" accept="video/*" style="display:none"></section>
   <section class="gcard"><div class="ghd"><span class="gnum">2</span><b>想怎麼改</b><span class="grow"></span><button class="gclr" id="gpfix" title="依你寫的內容，自動補上「哪些地方要保持不變」" style="margin-right:6px;border-color:var(--accent);color:var(--accent)">🪄 補完整</button><button class="gclr" id="gpclr" title="清掉提示詞（可以復原）">清掉</button></div>
-  <div class="gmrg" id="gmrg"></div><textarea id="gp" rows="3" placeholder="想怎麼改？例如：把衣服換成紅色連身裙"></textarea><div id="gpkx"></div><div class="gtool" id="gtool" style="margin-top:8px"></div><div id="gpk"></div><div id="gpl"></div>
-  <div class="gtcat" id="gvact"></div><div class="gref" id="gref"></div><input type="file" id="grf" accept="image/*" style="display:none"><div class="gppl" id="gppl"></div><div class="gtpl" id="gtpl"></div><div class="gpls" id="gpls"></div>
+  <div class="gmrg" id="gmrg"></div><textarea id="gp" rows="3" placeholder="想怎麼改？例如：把衣服換成紅色連身裙"></textarea>
   <label class="gmlb"><input type="checkbox" id="gml" ${LS.get('gml',false)?'checked':''}><span>多篇文字：用<b>空行</b>隔開，每篇做一次　<span class="mu" id="gmln"></span></span></label><button class="pill" id="gord" hidden title="多張圖＋多篇文字時，排隊的順序"></button>
+  <div id="gpkx"></div>
+  <div class="gtabs" id="gtabs"><button data-gt="pk">🏷 積木</button><button data-gt="pl">📚 範本</button><button data-gt="tool">🧰 工具箱</button><button data-gt="fav">⭐ 常用</button></div>
+  <div class="gtp" data-gp="tool"><div class="gtool" id="gtool"></div></div><div class="gtp" data-gp="pk"><div id="gpk"></div></div><div class="gtp" data-gp="pl"><div id="gpl"></div></div><div class="gtp" data-gp="fav"><div class="gpls" id="gpls"></div></div>
+  <div class="gtcat" id="gvact"></div><div class="gref" id="gref"></div><input type="file" id="grf" accept="image/*" style="display:none"><div class="gppl" id="gppl"></div><div class="gtpl" id="gtpl"></div>
   <div class="mu" id="gh3" style="display:none"><a href="javascript:void(0)" id="gh3b">📝 插入 H3 提示詞格式</a>　分鏡＋對白＋聲音寫在一起；英文描述效果最好，對白可以用中文</div>
   <details id="gnd"><summary class="mu">＋ 負面提示詞</summary><textarea id="gn" rows="2"></textarea></details></section>
   <section class="gcard"><div class="ghd"><span class="gnum">3</span><b>流程與設定</b></div>
@@ -1000,7 +1007,7 @@ async function rGen(again){if(again)return gJobs();
   <div class="gqual" id="gqual"></div><div class="gqual" id="gdur"></div><div class="gqual" id="gtst"></div><div class="gqual" id="gden"></div><div class="gwq" id="gwq"></div><div id="gwi"></div><div id="gmod"></div><details id="gadv" class="gadv"><summary>⚙ 進階設定 <span class="mu">一般不用動</span></summary><div id="gpar"></div></details></section>
   <div class="ggobar"><button class="ggo" id="ggo">▶ 開始</button></div>
   <section class="gcard"><div class="ghd"><b style="white-space:nowrap">⏳ 製作中</b><span class="grow"></span><button class="gclr" id="gcanall" style="display:none;white-space:nowrap">⏹ 全取消</button></div><div class="mu" id="geta" style="margin:-4px 0 8px">做好的在「歷史紀錄」</div><div id="gj"></div><div id="gdone"></div></section><div style="text-align:center;margin:4px 0 18px"><button class="gclr" id="greset" title="照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）">🧹 全部重來</button></div></div>`;
-  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>{LS.set('gprompt',$('#gp').value);gMlInfo()};$('#gml').onchange=()=>{LS.set('gml',$('#gml').checked);gMlInfo()};$('#gord').onclick=()=>{LS.set('gorder',LS.get('gorder','txt')==='img'?'txt':'img');gMlInfo();toast($('#gord').textContent,2500)};setTimeout(gMlInfo,50);if(PKL){pkDraw();pdDraw();pkPrev()}else pkLoad();gPl();gTpl();gRef();gMaskLoad();gTour();
+  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>{LS.set('gprompt',$('#gp').value);gMlInfo();pkPrev()};$('#gml').onchange=()=>{LS.set('gml',$('#gml').checked);gMlInfo();pkPrev()};$('#gord').onclick=()=>{LS.set('gorder',LS.get('gorder','txt')==='img'?'txt':'img');gMlInfo();toast($('#gord').textContent,2500)};setTimeout(gMlInfo,50);if(PKL){pkDraw();pdDraw();pkPrev()}else pkLoad();setTimeout(gTabs,60);gPl();gTpl();gRef();gMaskLoad();gTour();
   $('#greset').onclick=()=>{if(!confirm('全部重來？照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）'))return;
     GIMGS=[];GFILES=[];LS.set('gimgs',[]);GMASK.clear();LS.set('gmask',{});GREF=null;LS.set('gref','');LS.set('gboth',false);LS.set('gkeep',false);LS.set('gml',false);
     const g=$('#gp');g.value='';g.rows=3;LS.set('gprompt','');$('#gml').checked=false;gPrev();gRef();gTpl();gWfInfo();scrollTo(0,0);toast('🧹 清乾淨了，選新照片吧',2000)};
@@ -1922,10 +1929,23 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
     const r=await pkAsk(`「${c.name}」的選項`,o.t,[['✏ 存','g'],['⬅ 往前移'],['🗑 刪除','er'],['取消']]);
     if(r.i===0&&r.v.trim())o.t=r.v.trim();else if(r.i===1&&j>0){c.opts.splice(j,1);c.opts.splice(j-1,0,o)}else if(r.i===2){c.opts.splice(j,1);PKS[c.id]=(PKS[c.id]||[]).filter(x=>x!==o.id);LS.set('pksel',PKS)}else return;
     pkSave();pkDraw();pkPrev()})}
-function pkPrev(){const e=$('#gpkx');if(!e)return;const x=pkSuffix();if(!x){e.innerHTML='';return}
-  e.innerHTML=`<div class="pkx"><span>🏷 送出時加在後面：<b>${esc(x)}</b></span><button class="pill" id="pkM" title="把積木的字寫進上面，之後可以自己改">⬆ 合併到上面</button><button class="pill er" id="pkC">清除選擇</button></div>`;
-  $('#pkC').onclick=()=>{PKS={};LS.set('pksel',PKS);pkDraw();pkPrev()};
-  $('#pkM').onclick=()=>{const g=$('#gp'),ml=$('#gml')&&$('#gml').checked,t=g.value.trim();const B=ml&&t?gSplit(t):[t];g.value=(B.length?B:['']).map(pkJoin).join(ml?'\n\n':'');PKS={};LS.set('pksel',PKS);LS.set('gprompt',g.value);g.dispatchEvent(new Event('input'));pkDraw();pkPrev();toast('寫進上面了，可以再自己改',2500)}}
+function gFinal(){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml=$('#gml')&&$('#gml').checked,x=pkSuffix();const B=ml?(t?gSplit(t):[]):(t?[t]:[]);const L=(B.length?B:(x?['']:[])).map(pkJoin).filter(Boolean);return L.flatMap(gExpand).slice(0,50)}
+function pkPrev(){const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
+  if(!L.length){e.innerHTML='';return}if(L.length===1&&!x&&!/\{[^{}]*\|/.test(t)){e.innerHTML='';return}   // 只有自己打的一句：不用再顯示一次
+  const op=LS.get('gfin_o',L.length<=3),hl=s=>{let h=esc(s);if(x)h=h.replace(esc(x),`<i>${esc(x)}</i>`);return h};
+  e.innerHTML=`<div class="gfin"><div class="h"><b>📝 會送出 ${L.length} 個提示詞</b>${x?`<button class="pill" id="pkM" title="把積木的字寫進上面，之後可以自己改">⬆ 積木合併到上面</button><button class="pill er" id="pkC">清除積木</button>`:''}<button class="pill" id="gfinT">${op?'收起':'看全部'}</button></div>
+  ${op?`<ol>${L.map(p=>`<li>${hl(p)}</li>`).join('')}</ol>`:`<div class="mu" style="margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${hl(L[0])}</div>`}${x?'<div class="mu" style="font-size:12px;margin-top:4px">紫色字＝🏷 積木加上去的</div>':''}</div>`;
+  $('#gfinT').onclick=()=>{LS.set('gfin_o',!op);pkPrev()};
+  if(x){$('#pkC').onclick=()=>{PKS={};LS.set('pksel',PKS);pkDraw();pkPrev()};
+  $('#pkM').onclick=()=>{const g=$('#gp'),ml=$('#gml')&&$('#gml').checked,t=g.value.trim();const B=ml&&t?gSplit(t):[t];g.value=(B.length?B:['']).map(pkJoin).join(ml?'\n\n':'');PKS={};LS.set('pksel',PKS);LS.set('gprompt',g.value);g.dispatchEvent(new Event('input'));pkDraw();pkPrev();toast('寫進上面了，可以再自己改',2500)}}}
+/* V0.3.44 提示詞區分頁：🏷 積木／📚 範本／🧰 工具箱／⭐ 常用，一次只開一個（再點一次收起） */
+{const w=f=>function(){const r=f.apply(this,arguments);try{if($('#gtabs'))gTabs()}catch(e){}return r};gTool=w(gTool);pkDraw=w(pkDraw);pdDraw=w(pdDraw)}
+function gTabCnt(){const T=$('#gtabs');if(!T)return;const n=Object.values(PKS).reduce((a,v)=>a+(v||[]).length,0),B=k=>T.querySelector(`[data-gt="${k}"]`);
+  const set=(k,lbl,c)=>{const b=B(k);if(b)b.innerHTML=lbl+(c?`<small>${c}</small>`:'')};set('pk','🏷 積木',n?'選 '+n:'');set('pl','📚 範本',PKT.docs.length||'');
+  const tl=$('#gtool');const b=B('tool');if(b)b.hidden=!(tl&&tl.innerHTML.trim())}
+function gTabs(){const T=$('#gtabs');if(!T)return;const cur=LS.get('gptab','');T.querySelectorAll('[data-gt]').forEach(b=>b.classList.toggle('on',b.dataset.gt===cur));
+  document.querySelectorAll('.gtp').forEach(p=>p.classList.toggle('on',p.dataset.gp===cur));document.querySelectorAll('.gtp details.gadv').forEach(d=>d.open=true);gTabCnt();
+  if(!T._on){T._on=1;T.onclick=e=>{const b=e.target.closest('[data-gt]');if(!b)return;LS.set('gptab',LS.get('gptab','')===b.dataset.gt?'':b.dataset.gt);gTabs()}}}
 function pdDraw(){const box=$('#gpl');if(!box)return;const op=LS.get('gpl_o',false);
   box.innerHTML=`<details class="gadv" id="gpld" ${op?'open':''}><summary>📚 整篇範本 <span class="mu">存好的整篇文字（可以很多段），點一下帶到上面</span></summary>
   <div class="pdL">${PKT.docs.length?PKT.docs.map(d=>{const n=gSplit(d.text).length;return `<div class="pdI" data-d="${d.id}"><b>${esc(d.title||'（沒有標題）')}</b>${n>1&&/\n[ \t]*\n/.test(d.text)?` <span class="badge">${n} 段</span>`:''}<span class="mu">${esc(d.text.slice(0,80).replace(/\s+/g,' '))}</span></div>`}).join(''):'<div class="mu" style="font-size:13px">還沒有：在上面打好一整篇（段落之間空一行），按下面的「💾 存成範本」。</div>'}</div>
@@ -1954,8 +1974,9 @@ function hsDraw(){const w=$('#hsW');if(!w)return;const I=HSI;if(!I||!I.ok){w.inn
   w.innerHTML=`<h3>🤝 電腦效能分配 <span class="mu" style="font-size:12px;font-weight:400">規則第 ${I.rules} 版${I.rules_from==='lib'?'（別的程式的新版）':''}</span><button class="pill" id="hsX" style="margin-left:auto">✖ 關閉</button></h3>
   <div class="mu" style="font-size:13px">同一台電腦的程式互相讓：ComfyRemote 在生圖時最優先（${P.boost}%），其他的各 ${P.boost_others}%；平常 FusionStitch／SortCut 照下面的比例分；永遠留 ${P.reserve}% 給你用電腦。</div>
   <div class="mu" style="margin:10px 0 2px;font-weight:700">這台電腦有誰參與（沒勾的不管它、也不限制它）</div>
-  ${I.apps.map(a=>`<div class="hsA${a.member?'':' off'}"><div class="t"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}><b>${esc(a.name)}${a.app===I.me?'（這個）':''}</b><span class="mu">${a.on?'● 開著'+(a.ver?' V'+esc(a.ver):''):'○ 沒開'}</span><span class="pc">${a.member&&a.cap!=null&&a.on?Math.round(a.cap)+'%':''}</span></div>
+  ${I.apps.filter(a=>a.on).map(a=>`<div class="hsA${a.member?'':' off'}"><div class="t"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}><b>${esc(a.name)}${a.app===I.me?'（這個）':''}</b><span class="mu">${a.on?'● 開著'+(a.ver?' V'+esc(a.ver):''):'○ 沒開'}</span><span class="pc">${a.member&&a.cap!=null&&a.on?Math.round(a.cap)+'%':''}</span></div>
     ${a.on&&a.member?`<div class="mu" style="font-size:12.5px;margin-top:3px">${esc(WT[a.want]||'')}${a.what?'：'+esc(a.what):''}　Lv${a.lv}${a.why?'　· '+esc(a.why):''}</div><div class="hsBar"><i style="width:${Math.min(100,a.cap||0)}%"></i></div>`:''}</div>`).join('')}
+  ${I.apps.some(a=>!a.on)?`<div class="mu" style="font-size:12.5px;margin:6px 2px">沒偵測到（沒開或不在這台）：${I.apps.filter(a=>!a.on).map(a=>`<label style="margin-right:10px;white-space:nowrap"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}> ${esc(a.name)}</label>`).join('')}<br>沒偵測到的不會分效能、也不會讓路給它</div>`:''}
   <div class="hsRow"><span>平常分配</span><span>GoPro ${fsp}</span><input type="range" id="hsN" min="10" max="90" step="5" value="${fsp}"><span>${100-fsp} SortCut</span></div>
   <div class="hsRow"><span>留給你用電腦</span><input type="range" id="hsR" min="0" max="30" step="5" value="${P.reserve}"><b>${P.reserve}%</b></div>
   <div class="hsRow"><span>ComfyRemote 生圖時拿</span><input type="range" id="hsB" min="40" max="90" step="5" value="${P.boost}"><b>${P.boost}%</b></div>

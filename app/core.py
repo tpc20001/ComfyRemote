@@ -2368,7 +2368,7 @@ class Engine:
             dead = time.time() + max(1, int(self.cfg.get('gen_timeout_min') or 60)) * 60; last_h = 0; fin = False; fin_t = 0; H = None; started = False
             pre = f'第 {J["seg"]}／{J["nseg"] or "?"} 段 · ' if J.get('seg') else ''
             J['msg'] = pre + '送出了，等 ComfyUI…'
-            act_t = time.time(); last_q = time.time(); lost = 0; J.pop('stall', None)
+            act_t = J['act_t'] = time.time(); last_q = time.time(); lost = 0; J.pop('stall', None)
             stall_min = float(self.cfg.get('gen_stall_min') or 8); auto_min = float(self.cfg.get('gen_stall_auto_min') or 0)
             if re.search(r'H3|影片|video', J.get('wf') or '', re.I): stall_min *= 2; auto_min *= 1.5   # 影片一步比較久
             while True:
@@ -2410,7 +2410,7 @@ class Engine:
                 else: time.sleep(1.0)
                 if isinstance(m, dict) and (m.get('type') == '_preview' or (m.get('data') or {}).get('prompt_id') == pid):
                     if J.get('stall') and m.get('type') in ('progress', 'executing'): J.pop('stall', None)
-                    act_t = time.time()
+                    act_t = J['act_t'] = time.time()
                 if isinstance(m, dict) and m.get('type') == '_preview':
                     if started: J['_pv'] = (time.time(), m['data']['img'])   # 最新一張預覽（只放記憶體）
                     continue

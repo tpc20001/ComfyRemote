@@ -202,6 +202,10 @@ def t_hs():
         try:
             hs.write(); I = hslink.info(); me = [a for a in I['apps'] if a['app'] == 'ComfyRemote'][0]
             assert I['ok'] and me['want'] == 2 and '排隊 2 張' in me['what'] and I['rules'] == 4, I
+            E.gen_wait = '連不到'; E.gen_active = {}; assert hslink.state()['want'] == 1        # V0.3.43 連不到 ComfyUI：不跟別人要
+            E.gen_wait = ''; E.gen_active = {1: {'stall': time.time() - 700}}; assert hslink.state()['want'] == 1   # 卡住太久：放手
+            E.gen_active = {1: {'stall': time.time() - 60}}; st = hslink.state(); assert st['want'] == 2 and st['need']['starved']   # 剛卡住：請別人讓顯示卡
+            E.gen_active = {1: {}}
             r = hslink.set_({'members': ['ComfyRemote', 'FusionStitch', 'SortCut', 'TikLive']}); assert r['p3']['members'] == []   # 全勾＝看到誰算誰
             r = hslink.set_({'lv': {'ComfyRemote': 7}, 'reserve': 15}); assert r['lv'] == 7 and r['p3']['reserve'] == 15
             assert (H.lib_dir() / 'app_handshake_r4.py').exists() or (time.sleep(2.5) or (H.lib_dir() / 'app_handshake_r4.py').exists())   # 放進 lib：別的程式自動用新規則

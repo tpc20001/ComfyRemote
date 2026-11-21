@@ -28,20 +28,38 @@ def bind(**kw):
 
 
 def state():
+    """V0.3.43 只在「真的有在做」時才跟別人要效能（不要讓另外兩個為了一個卡住的 ComfyUI 一直跑 5%）：
+    - 連不到 ComfyUI（排隊在等它開）→ want 1：不跟別人要
+    - 生圖暫停 → want 0
+    - 有工作、ComfyUI 有在動 → want 2（最優先）
+    - 卡住（8 分鐘沒進度）→ 先請別人放掉顯示卡 10 分鐘（規則第 4 版 starved）；還是沒動 → want 1，別人照常全速（20 分鐘會自動中斷重來）"""
     E = _S['ctx'].get('eng'); a = q = 0
-    try: a = len(E.gen_active); q = len(E.gen_q)
+    try: A = list(E.gen_active.values()); a = len(A); q = len(E.gen_q)
+    except Exception: A = []
+    P3 = HS.policy3(); base = {'on': True, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'use': {}, 'max': {}, 'need': {}}
+    if not (a or q): return {**base, 'want': 0, 'what': ''}
+    try:
+        if E.bg_hold('gen'): return {**base, 'want': 0, 'what': f'生圖暫停中（排隊 {q} 張）'}
     except Exception: pass
-    P3 = HS.policy3(); need = {}
-    if a or q:                                                                  # V0.3.42 規則第 4 版：ComfyUI 缺顯示卡記憶體／卡住 → 請別的程式放掉顯示卡
-        try:
-            v = (E.comfy_status() or {}).get('vram') or [None, None]
-            vf = (v[0] or 0) / 2**30 if v[0] is not None else None
-            st = any(J.get('stall') for J in list(E.gen_active.values()))
-            if (vf is not None and vf < 1.0) or st:
-                need = {'starved': True, 'vram_free_gb': round(vf, 2) if vf is not None else None, 'why': 'ComfyUI 卡住沒進度' if st else f'顯示卡記憶體只剩 {vf:.1f} GB'}
-        except Exception: pass
-    return {'on': True, 'want': 2 if (a or q) else 0, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'need': need,
-            'what': (f'生圖：正在做 {a} 張' + (f'、排隊 {q} 張' if q else '')) if (a or q) else '', 'use': {}, 'max': {}}
+    if getattr(E, 'gen_wait', '') and not a: return {**base, 'want': 1, 'what': f'等 ComfyUI（連不到）：排隊 {q} 張，先不跟別人要效能'}
+    now = time.time(); stall = [J for J in A if J.get('stall')]
+    what = f'生圖：正在做 {a} 張' + (f'、排隊 {q} 張' if q else '')
+    if stall:
+        age = (now - min(J['stall'] for J in stall)) / 60
+        if age >= 10:
+            return {**base, 'want': 1, 'what': f'ComfyUI 卡住沒進度（已請別人讓顯示卡 10 分鐘還是沒動）：先不跟別人要效能，會自動中斷重來'}
+        return {**base, 'want': 2, 'what': what + '（卡住：請別人先讓顯示卡）', 'need': {'starved': True, 'why': 'ComfyUI 卡住沒進度', 'vram_free_gb': _vram(E)}}
+    vf = _vram(E)
+    if a and vf is not None and vf < 1.0:
+        return {**base, 'want': 2, 'what': what, 'need': {'starved': True, 'vram_free_gb': vf, 'why': f'顯示卡記憶體只剩 {vf:.1f} GB'}}
+    return {**base, 'want': 2, 'what': what}
+
+
+def _vram(E):
+    try:
+        v = (E.comfy_status() or {}).get('vram') or [None, None]
+        return round(v[0] / 2**30, 2) if v[0] is not None else None
+    except Exception: return None
 
 
 def stop(remove=True):
