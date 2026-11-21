@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.62'
+APP_VERSION = '0.3.63'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -224,7 +224,8 @@ class GenPage(QWidget):
         b_ppl.setToolTip('某人的照片存成編號 a01…，提示詞寫 a01 就自動帶他的照片'); b_ppl.clicked.connect(lambda: PeopleDlg(self).exec())
         b_tpl.setToolTip('拿 ComfyUI 內建的官方範本做流程（例如 MiniMax H3 文字生影片）'); b_tpl.clicked.connect(self.import_tpl)
         b_cmp = QPushButton('🧪 比較模型'); b_cmp.setToolTip('同一批照片讓好幾種模型各改一次，排一整晚比速度和畫質（在瀏覽器開大螢幕版）'); b_cmp.clicked.connect(self.open_cmp)
-        for b_ in (b_re, b_out, b_wfd, b_imp, b_tpl, b_ppl, b_cmp): r0.addWidget(b_)
+        b_lc = QPushButton('🚀 開 ComfyUI'); b_lc.setToolTip('打開 Comfy Desktop（找不到程式時會問你在哪；手機的提醒條也能按）'); b_lc.clicked.connect(self.launch_comfy)   # V0.3.63
+        for b_ in (b_re, b_lc, b_out, b_wfd, b_imp, b_tpl, b_ppl, b_cmp): r0.addWidget(b_)
         self.url.editingFinished.connect(lambda: (ENG.cfg.set('comfy_url', self.url.text().strip()), self.status(True)))
         b_re.clicked.connect(lambda: self.status(True)); b_imp.clicked.connect(self.import_wf)
         b_out.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(ENG.data / 'outputs'))))
@@ -499,6 +500,13 @@ class GenPage(QWidget):
             ENG.cfg.set('web_on', True); web_apply()
         ENG.cfg.set('web_tab_hint', 'cmp')
         QDesktopServices.openUrl(QUrl(f'http://127.0.0.1:{int(ENG.cfg.get("web_port") or BRAND["web_port"])}/?pc=1&tab=cmp'))
+
+    def launch_comfy(self):
+        if not ENG.comfy_exe():
+            p, _ = QFileDialog.getOpenFileName(self, 'Comfy Desktop 的程式（ComfyUI.exe）在哪？', os.environ.get('LOCALAPPDATA', ''), 'ComfyUI (*.exe)')
+            if not p: return
+            ENG.cfg.set('comfy_exe', p)
+        r = ENG.comfy_launch('電腦版按的'); QMessageBox.information(self, 'ComfyUI', r.get('message', ''))
 
     def import_tpl(self):
         L = [f'{t}　（{n}）' for t, n in ENG.TEMPLATES]
