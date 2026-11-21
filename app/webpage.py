@@ -349,6 +349,7 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 @media (max-width:820px){.ovnav{display:none!important}}
 @media (max-width:385px){.logo{font-size:0!important;gap:0}.logo i{margin-right:0}}@media (max-width:385px) and (min-width:0){#sysFab button{padding-left:8px!important;padding-right:8px!important}}
 /* V0.3.44 提示詞區分頁＋最後送出預覽 */
+@media(max-width:560px){#ver{display:none}#hslv .pct{display:none}#hslv{margin-right:0;padding:2px 7px}}   /* V0.3.60 手機：Lv 不要被上面的浮動鈕蓋住（版本號在設定看） */
 @media(min-width:1100px){.hdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:10px;align-items:start}.hdg>details.hgrp{grid-column:1/-1}.tkdG{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}#igd,.igdA{max-width:none}}   /* V0.3.59 平板：歷史紀錄、IG 多欄 */
 @media(min-width:1100px){#genv{display:grid;grid-template-columns:minmax(0,1fr) minmax(360px,460px);max-width:1560px;align-items:start;column-gap:18px}#genv>*{grid-column:1;min-width:0}#genv>#gjsec{grid-column:2;grid-row:1/span 40;position:sticky;top:110px;max-height:calc(100vh - 200px);overflow:auto}body.pc main,body.pc header .bar,body.pc nav{max-width:1560px}}   /* V0.3.58 平板／寬螢幕：右邊固定「製作中」 */
 .gtabs{display:flex;gap:6px;margin-top:10px;overflow-x:auto;scrollbar-width:none}.gtabs::-webkit-scrollbar{display:none}.gtabs button{flex:1;min-width:76px;padding:9px 6px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:14px;white-space:nowrap}.gtabs button.on{background:color-mix(in srgb,var(--accent) 22%,var(--card));border-color:var(--accent);color:var(--strong)}.gtabs button[hidden]{display:none}.gtabs button small{font-weight:400;color:var(--sub);margin-left:3px}
@@ -1647,7 +1648,7 @@ async function qLoad(host){let j;try{j=await api('/api/gen?n=30')}catch(e){retur
   host.scrollTop=keep}
 
 // ================= ⚙ 設定（照 TikLive）：上面「設定／流程／更新包」；設定裡左邊分類（可搜尋）、右邊內容
-const CATS=[['電腦',[['diag','🩺','診斷','一頁看完哪裡要處理','診斷 檢查 問題 健康 金鑰 硬碟 下載'],['perf','📊','電腦效能','CPU、記憶體、顯示卡、溫度','效能 cpu gpu vram 溫度 記憶體 顯示卡'],['comfy','🎨','ComfyUI','網址、照片大小、逾時','comfyui 網址 埠 照片 縮小 像素 逾時 超時 失敗'],['mdl','🧩','模型檔','佔多少空間、刪沒用到的','模型 硬碟 空間 刪除 safetensors'],
+const CATS=[['電腦',[['diag','🩺','診斷','一頁看完哪裡要處理','診斷 檢查 問題 健康 金鑰 硬碟 下載'],['perf','📊','電腦效能','CPU、記憶體、顯示卡、溫度','效能 cpu gpu vram 溫度 記憶體 顯示卡'],['hs','🤝','效能分配（Lv）','跟 SortCut、GoPro 分電腦','握手 lv 效能 分配 讓路 sortcut gopro fusion tiklive'],['cloud','☁','雲端更新','檢查新版、自動更新','雲端 更新 github 版本 自動'],['comfy','🎨','ComfyUI','網址、照片大小、逾時','comfyui 網址 埠 照片 縮小 像素 逾時 超時 失敗'],['mdl','🧩','模型檔','佔多少空間、刪沒用到的','模型 硬碟 空間 刪除 safetensors'],
   ['bg','🖥','後台狀態','暫停、取消、自動讓路','後台 背景 暫停 繼續 取消 讓路 cpu 排隊'],['log','📜','LOG','程式紀錄、錯誤','log 紀錄 錯誤 error']]],
  ['這支手機（只影響這個瀏覽器）',[['look','🎨','外觀與通知','深色／淺色、做好時震動／叮一聲','外觀 深色 淺色 主題 網頁版 手機版 通知 震動 聲音'],['login','🔒','登入','登出這支手機','登入 登出 pin 密碼']]],
  ['其他',[['lab','🧪','實驗工作區','還在試的功能','實驗 lab'],['help','📖','使用說明','怎麼改圖、兩個流程怎麼選、比較','說明 教學 怎麼用 比較 模型 改圖 裁切 畫質 通知'],['about','ℹ','關於','版本、更新紀錄','關於 版本 更新紀錄 changelog']]]];
@@ -1772,6 +1773,8 @@ const segH=(k,cur,opts)=>`<div class="seg" data-sk="${k}">${opts.map(([v,n])=>`<
 async function setVal(k,v){const r=await api('/api/settings',{[k]:v});toast(r.ok&&(r.changed||[]).includes(k)?'✔ 已儲存':'沒存到')}
 async function drawSetCat(again){const sb=$('#sbody');if(!sb)return;const c=S.scat;sb.onclick=null;
   if(c==='perf'){await pfLoad(sb);return}
+  if(c==='hs'){await hsGet();const I=HSI||{};sb.innerHTML=`<h2 class="stt">🤝 效能分配（Lv）</h2><div class="snote">${I.ok?`這邊 Lv${I.lv}${I.cap!=null?'，現在分到 '+Math.round(I.cap)+'%':''}。${esc(I.why||'')}`:'握手還沒開始'}</div><div class="snote">同一台電腦的 ComfyRemote、SortCut、GoPro Fusion 360 互相讓：ComfyRemote 在生圖時最優先，平常另外兩個照比例分，永遠留一點給你用電腦。設定三個程式共用。</div><button class="btn" id="hsGo" style="margin-top:10px">打開 Lv 畫面（勾誰參與、調分配、Lv 1～10）</button>`;$('#hsGo').onclick=hsOpen;return}   // V0.3.60
+  if(c==='cloud'){S.stab='upd';LS.set('stab','upd');rSet();return}
   if(c==='bg'){if(!again)sb.innerHTML='<div class="empty">讀取中…</div>';sb.onclick=bgsClick;await bgsLoad(sb);return}
   if(again)return;
   if(c==='help'){sb.innerHTML=`<h2 class="stt">📖 使用說明</h2>
@@ -2000,7 +2003,7 @@ function pdDraw(){const box=$('#gpl');if(!box)return;const op=LS.get('gpl_o',fal
     pkSave();pdDraw()})}
 /* V0.3.40 🤝 右上角 Lv：跟 SortCut、GoPro Fusion 360（FusionStitch）分電腦效能（共用規則第 3 版） */
 let HSI=null;
-async function hsGet(){try{HSI=await api('/api/hs')}catch(e){HSI=null}const b=$('#hslv');if(b&&HSI&&HSI.ok){b.textContent='Lv'+HSI.lv+(HSI.cap!=null?` · ${Math.round(HSI.cap)}%`:'');b.className='hslv'+(HSI.mode==='lead'&&HSI.apps.find(a=>a.app===HSI.me&&a.want>=2)?' boost':HSI.mode==='yield'?' yield':'')}return HSI}
+async function hsGet(){try{HSI=await api('/api/hs')}catch(e){HSI=null}const b=$('#hslv');if(b&&HSI&&HSI.ok){b.innerHTML='Lv'+HSI.lv+(HSI.cap!=null?`<span class="pct"> · ${Math.round(HSI.cap)}%</span>`:'');b.className='hslv'+(HSI.mode==='lead'&&HSI.apps.find(a=>a.app===HSI.me&&a.want>=2)?' boost':HSI.mode==='yield'?' yield':'')}return HSI}
 function hsUse(u){u=u||{};const L=[];if(u.vram_gb!=null)L.push(`佔顯示卡記憶體 ${u.vram_gb} GB`);if(u.vram_total_gb)L.push(`ComfyUI 看到顯示卡記憶體剩 ${u.vram_free_gb}／${u.vram_total_gb} GB`);if(u.ram_total_gb)L.push(`RAM 剩 ${u.ram_free_gb}／${u.ram_total_gb} GB`);return L.length?'<br>🧠 '+L.join('・'):''}
 function hsInit(){const b=$('#hslv');if(!b||b._on)return;b._on=1;b.onclick=hsOpen;hsGet();setInterval(()=>{if(!document.hidden)hsGet()},10000)}
 async function hsSet(d){const r=await api('/api/hs',d);if(r&&r.ok){HSI=r;hsDraw()}else toast((r&&r.message)||'改不了',3000)}

@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.59'
+APP_VERSION = '0.3.60'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
