@@ -947,7 +947,7 @@ function gSplit(p){p=String(p||'').replace(/\r/g,'');const B=/\n[ \t]*\n/.test(p
 function gMlInfo(){const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
   e.textContent=on?(n?`共 ${n} 篇`+(ni>1?(LS.get('gorder','txt')==='pair'?`、${ni} 張圖一對一 ＝ ${Math.max(n,ni)} 次`:` × ${ni} 張圖 ＝ ${n*ni} 次`):''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const go=LS.get('gorder','txt');o.textContent=go==='img'?'🔀 一張圖先跑完全部文字':go==='pair'?`🔀 一對一：第 1 張圖配第 1 篇…（${Math.max(n,ni)} 個）`:'🔀 一篇文字先跑完全部圖'}}
 /* V0.3.39 ⏹ 批量取消：整批（同一次送出的）或全部，一次在電腦上取消（幾百個也是一下子） */
-let GQS={n:0,b:{}},GBSEEN=new Set();
+let GQS={n:0,b:{}},GBSEEN=new Set(),GEXP=new Set();
 async function gCancelMany(batch){const n=batch?(GQS.b[String(batch)]||0):GQS.n,run=GJ.filter(x=>x.state==='run'&&(!batch||(x.batch||x.id)===batch));
   if(!n&&!run.length)return toast('沒有在排隊的');
   if(n&&!confirm(batch?`取消這一批還在排隊的 ${n} 個？`:`取消全部排隊中的 ${n} 個？`))return;
@@ -982,7 +982,8 @@ async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;
     const ok=fin.filter(x=>x.state==='done').length,bad=fin.filter(x=>x.state==='fail').length;if(ok||bad){toast((ok?`✔ 做好 ${ok} 個`:'')+(bad?` ✖ ${bad} 張失敗`:'')+' → 在「歷史紀錄」',4500);gNotify(ok,bad,!act.length)}}
   LS.set('gpend',act.length>0);{const ca=$('#gcanall');if(ca){ca.style.display=GQS.n>0?'':'none';ca.textContent=`⏹ 全部取消（${GQS.n}）`;ca.onclick=()=>gCancelMany(0)}}const ge=$('#geta');if(ge){const e=gEta(act);ge.textContent=e||'做好的在「歷史紀錄」'}
   const nd=GJ.filter(x=>x.state==='done').length;
-  const h=act.map(x=>gCard(x)).join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」 · 做好的在「歷史紀錄」${nd?`（最近 ${nd} 張）`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
+  const hb=[],seenW=new Set();for(const x of act){const bk=x.batch||x.id;if(x.state==='wait'&&seenW.has(bk)&&!GEXP.has(bk))continue;if(x.state==='wait'){seenW.add(bk);const m=(GQS.b[String(bk)]||0)-1;hb.push(gCard(x));if(m>0&&!GEXP.has(bk))hb.push(`<div class="gfin gfold" data-gexp="${bk}" style="cursor:pointer;margin-top:-4px"><div class="h"><b style="flex:1 1 auto">📚 同一批還有 ${m} 張在排隊</b><span class="mu">點一下展開</span><button class="pill er" data-g="cancelb" data-id="${bk}">⏹ 取消這一批</button></div></div>`);continue}hb.push(gCard(x))}   // V0.3.61 批量的排隊卡片收成一張
+  const h=hb.join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」 · 做好的在「歷史紀錄」${nd?`（最近 ${nd} 張）`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
   // 剛做好的（最近 1 小時）：直接在這裡看，不用切到歷史紀錄
   const now=Date.now()/1000+GOFF,D=GJ.filter(x=>x.state==='done'&&x.outs&&x.outs.length&&now-(x.t1||x.t)<3600&&!x.cmp).slice(0,12);
   const dh=D.length?`<div class="gdh"><b>✨ 剛做好</b><span class="mu">點圖放大（左右換）</span></div><div class="gds">${D.map(x=>x.outs.slice(0,1).map(o=>ISV(o)?`<span class="gdi"><video src="${IMGU(o)}#t=0.5" muted playsinline preload="metadata" controls></video><button class="gdv" data-g="vnext" data-id="${x.id}" data-v="${esc(o)}">⏭ 接下一段</button></span>`:`<span class="gdi"><img src="${IMGT(o)}" data-big="${esc(o)}" data-id="${x.id}" data-i="0" loading="lazy">${(BIG.find(b=>b[0]===x.wf)||[])[1]?`<i>${BIG.find(b=>b[0]===x.wf)[1]}</i>`:''}${x.mask?'<i class="m">🖌</i>':''}${x.vote?`<i class="v">★${x.vote}</i>`:''}</span>`).join('')).join('')}</div>`:'';
@@ -1301,7 +1302,7 @@ function ovStars(J){const b=$('#ovs');if(!b)return;if(!J||!J.id||(J.state&&J.sta
 async function ovVote(J,v){await api('/api/cmp',{a:'vote',id:J.id,v});J.vote=v;ovStars(J);CLAST='';toast(v?'★'.repeat(v):'清掉分數',900)}
 addEventListener('keydown',e=>{if($('#ov').style.display!=='flex'||!OVCUR||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName||''))return;if(!/^[0-5]$/.test(e.key))return;
   const J=(CUR==='cmp'?CJ:GJ.concat(HJ)).find(x=>x.id===+OVCUR.dataset.id);if(J){e.preventDefault();ovVote(J,+e.key)}});
-async function gClick(e){const im=e.target.closest('img[data-big]');
+async function gClick(e){{const fx=e.target.closest('[data-gexp]');if(fx&&!e.target.closest('button')){GEXP.add(+fx.dataset.gexp);GLAST='';gJobs();return}}const im=e.target.closest('img[data-big]');
   if(im){ovOpen(im);return}
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=+b.dataset.id;
   if(a==='fill'){const J=GJ.concat(HJ).find(x=>x.id===id);if(J)gFill(J);return}
