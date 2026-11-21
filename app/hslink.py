@@ -94,7 +94,7 @@ def info():
         apps.append({'app': k, 'name': nm, 'on': p is not None, 'ver': (p or {}).get('ver', ''), 'want': int((p or {}).get('want') or 0),
                      'what': (p or {}).get('what', ''), 'member': (not P3['members']) or k in P3['members'], 'lv': P3['lv'].get(k, 10),
                      'cap': (A.get(k) or {}).get('cap'), 'mode': (A.get(k) or {}).get('mode', ''), 'why': (A.get(k) or {}).get('why', ''),
-                     'rules': (p or {}).get('rules'), 'use': dict((p or {}).get('use') or {})})
+                     'rules': (p or {}).get('rules_own') or (p or {}).get('rules'), 'use': dict((p or {}).get('use') or {})})
     for k, p in seen.items():                                                   # 不認得的程式也列出來
         if k not in dict(HS.KNOWN):
             apps.append({'app': k, 'name': p.get('name') or k, 'on': True, 'ver': p.get('ver', ''), 'want': int(p.get('want') or 0), 'what': p.get('what', ''),
