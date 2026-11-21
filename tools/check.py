@@ -280,6 +280,7 @@ def t_gen():
         if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (nx,))[0] == 'done': break
     assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (nx,))[0] == 'done', '跳過之後下一張沒有接著做'
     E.cfg.set('gen_stall_min', 8); E.cfg.set('gen_stall_auto_min', 20); E.cfg.set('gen_lost_check_sec', 15)
+    E.cfg.set('comfy_exe', '/nonexistent/ComfyUI.exe'); assert not E.comfy_launch('測試')['ok']   # V0.3.62 找不到程式：不會亂開
     print('    ✔ ComfyUI 弄丟工作 → 重新送出；卡住 → 提醒、自動中斷清記憶體重排')
     i2 = E.gen_save_input(F.png(9, 9), 't2')
     try: E.gen_add('兩張圖合併', 'x', img); raise AssertionError('只給一張也收了')

@@ -48,6 +48,8 @@ DEFAULTS = {
     'comfy_url': '',                             # 空的＝自動找（Desktop 8000、免安裝版 8188）
     'gen_wf': 'GROK 改圖',                        # 預設用哪個流程（Data\workflows\<名稱>.json）
     'gen_timeout_min': 60,                       # 一張超過幾分鐘算失敗
+    'comfy_exe': '',                             # V0.3.62 Comfy Desktop 的程式（空的＝找預設位置）
+    'comfy_autostart': False,                    # V0.3.62 連不到 3 分鐘自動打開 ComfyUI
     'gen_stall_min': 8,                          # V0.3.42 跑到一半幾分鐘沒有任何進度 → 提醒（多半是記憶體不夠，ComfyUI 卡住）
     'gen_stall_auto_min': 20,                    # 卡住幾分鐘自動「中斷＋清記憶體＋重排」一次（0＝不要自動）
     'gen_mp': 2.0,                               # 手機上傳前縮成幾百萬像素（0＝原圖）
@@ -1994,6 +1996,28 @@ class Engine:
         if J: J['cancel'] = True; self.log.w(f'生圖：#{jid} 取消（中斷 ComfyUI）'); return True
         return False
 
+    def comfy_exe(self):
+        """V0.3.62 Comfy Desktop 的程式在哪（設定 comfy_exe；沒設就找預設安裝位置）."""
+        c = str(self.cfg.get('comfy_exe') or '').strip().strip('"')
+        L = [c] if c else []
+        la = os.environ.get('LOCALAPPDATA', '')
+        if la: L += [os.path.join(la, 'Programs', '@comfyorgcomfyui-electron', 'ComfyUI.exe'), os.path.join(la, 'Programs', 'ComfyUI', 'ComfyUI.exe')]
+        for x in L:
+            if x and os.path.isfile(x): return x
+        return ''
+
+    def comfy_launch(self, why='手機'):
+        """打開 ComfyUI（Comfy Desktop）。10 分鐘內開過就不再開（它可能正在啟動）."""
+        exe = self.comfy_exe()
+        if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式（Comfy Desktop 預設安裝位置沒有）'}
+        if time.time() - getattr(self, '_comfy_launch_t', 0) < 600: return {'ok': False, 'message': '10 分鐘內已經叫它開過了，ComfyUI 可能還在啟動，等一下'}
+        try:
+            self._comfy_launch_t = time.time()
+            subprocess.Popen([exe], cwd=os.path.dirname(exe), close_fds=True, creationflags=(0x00000008 | 0x00000200) if os.name == 'nt' else 0)
+            self.log.w(f'生圖：打開 ComfyUI（{why}）：{exe}')
+            return {'ok': True, 'message': '🚀 叫 ComfyUI 打開了（啟動大約 1～2 分鐘，好了會自動接著做）'}
+        except Exception as ex: return {'ok': False, 'message': f'打不開 ComfyUI：{ex}'}
+
     def gen_cancel_many(self, batch=0, run=False):
         """V0.3.39 ⏹ 批量取消：batch＝只取消這一批（同一次送出的），0＝全部；run＝連正在跑的也中斷。一次改完（幾百個也很快）."""
         b = int(batch or 0); n = 0
@@ -2344,7 +2368,9 @@ class Engine:
                     st = self.comfy_status()
                     if not st['ok']:
                         if not self.gen_wait: self.log.w(f'生圖：連不到 ComfyUI，{len(self.gen_q)} 個工作等它開'); self.gen_wait_t = time.time()
-                        self.gen_wait = st['err'] or '連不到 ComfyUI'; self.gen_hot = None; time.sleep(3); continue
+                        self.gen_wait = st['err'] or '連不到 ComfyUI'; self.gen_hot = None
+                        if self.cfg.get('comfy_autostart') and time.time() - getattr(self, 'gen_wait_t', time.time()) > 180: self.comfy_launch('連不到 3 分鐘，自動打開')   # V0.3.62
+                        time.sleep(3); continue
                     if self.gen_wait: self.log.w('生圖：ComfyUI 回來了，繼續'); self.gen_wait = ''
                     jid = self._gen_pick()
                     if jid is None: time.sleep(2); continue
