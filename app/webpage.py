@@ -1468,11 +1468,14 @@ async function hLoad(reset){if(reset){HOFF=0;HJ=[]}hModeBar();const hm=LS.get('h
   $('#hn').textContent=`共 ${HTOT} 筆`;$('#hm').style.display=HOFF<HTOT?'':'none';
   $('#htip').textContent=HVIEW==='star'?'你打 4～5 星的結果（點圖放大可以打分數，電腦按 1～5）':HVIEW==='trash'?`放在回收桶 ${30} 天後會自動永久刪除；還原會把檔案搬回去`:HVIEW==='hidden'?'隱藏的紀錄不會出現在「全部」，檔案和時間統計都還在':'';hRender()}
 function hSelBar(){let b=$('#hsb');document.body.classList.toggle('hsel',!!HSEL);if(!HSEL){if(b)b.remove();return}if(!b){b=document.createElement('div');b.id='hsb';document.body.appendChild(b)}
-  b.innerHTML=`<span><b>已選 ${HSEL.size} 筆</b></span><button class="pill" data-s="all">全選</button>${HSEL.size===2?'<button class="pill acc" data-s="vs">🆚 比這兩張</button>':''}${HVIEW==='trash'?'':'<button class="pill" data-s="dl">⬇ 下載</button>'}${hBtns(HVIEW).replace(/data-h=/g,'data-hs=')}<button class="pill" data-s="off">✕ 結束選取</button>`;
+  b.innerHTML=`<span><b>已選 ${HSEL.size} 筆</b></span><button class="pill" data-s="all">全選</button>${HSEL.size===2?'<button class="pill acc" data-s="vs">🆚 比這兩張</button>':''}${HVIEW==='trash'?'':'<button class="pill" data-s="dl">⬇ 下載</button>'}${HVIEW==='trash'?'':'<button class="pill" data-s="tpl" title="把勾的這幾筆的提示詞存成一篇「📚 整篇範本」（每筆一段）">📚 存成範本</button>'}${hBtns(HVIEW).replace(/data-h=/g,'data-hs=')}<button class="pill" data-s="off">✕ 結束選取</button>`;
   b.onclick=async e=>{const x=e.target.closest('button');if(!x)return;if(x.dataset.s==='off'){HSEL=null;hRender();$('#hsel').classList.remove('on');return}
     if(x.dataset.s==='vs'){const [a,b2]=HJ.filter(j=>HSEL.has(j.id)).sort((p,q)=>p.id-q.id);const oa=(a.outs||[]).find(o=>!ISV(o)),ob=(b2.outs||[]).find(o=>!ISV(o));if(!oa||!ob)return toast('兩筆都要有圖片結果');
       const im=document.querySelector(`#hl img[data-big="${CSS.escape(ob)}"]`);if(!im)return toast('先把那一組展開');ovOpen(im);$('#cmpa').src=IMGU(oa);$('#cmp .cl').textContent='#'+a.id;$('#cmp .cr').textContent='#'+b2.id;cmpShow(true);return}
     if(x.dataset.s==='all'){HJ.forEach(j=>{if(j.state!=='run'&&j.state!=='wait')HSEL.add(j.id)});hRender();return}
+    if(x.dataset.s==='tpl'){const P=[...new Set(HJ.filter(j=>HSEL.has(j.id)).sort((p,q)=>p.id-q.id).map(j=>(j.prompt||'').trim()).filter(Boolean))];if(!P.length)return toast('勾的紀錄沒有提示詞');   // V0.3.49 好的提示詞存起來下次用
+      if(!PKL)await pkLoad();const r=await pkAsk(`把 ${P.length} 段提示詞存成範本：標題`,P[0].slice(0,16),[['💾 存','g'],['取消']]);if(r.i!==0)return;
+      PKT.docs.unshift({id:pkId(),title:r.v.trim()||P[0].slice(0,16),text:P.join('\n\n'),t:Date.now()/1000});await pkSave();toast(`📚 存好了（${P.length} 段）：生圖頁「📚 範本」點一下就帶回來`,4000);return}
     if(x.dataset.s==='dl'){const O=HJ.filter(j=>HSEL.has(j.id)).flatMap(j=>j.outs||[]);if(!O.length)return toast('勾的紀錄沒有結果檔');
       if(O.length>2){const a=document.createElement('a');a.href=U('/api/zip',{ids:HJ.filter(j=>HSEL.has(j.id)).map(j=>j.id).join(',')});a.download='';document.body.appendChild(a);a.click();a.remove();toast(`⬇ ${O.length} 個打包成一個 zip 下載`,3000);return}
       if(O.length>1&&!confirm(`下載 ${O.length} 個檔案？（瀏覽器第一次可能會問「允許下載多個檔案」，按允許）`))return;
