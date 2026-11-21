@@ -944,7 +944,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     toast(r.ok?(PL.length>1?`✔ ${PL.length} 篇文字 × 照片，共排了 ${tot} 個工作`:'✔ '+r.message)+'，電腦開始跑':(r.message||'失敗'),r.ok?3000:6000);if(r.ok){LS.set('gprompt',p);gJobs();gPl()}}catch(e){toast('失敗：'+e.message,5000)}finally{b.disabled=false}}
 /* V0.3.38 多篇文字：有空行 → 用空行分篇（一篇可以有好幾行）；沒有空行 → 跟以前一樣每一行一篇。最多 50 篇 */
 function gSplit(p){p=String(p||'').replace(/\r/g,'');const B=/\n[ \t]*\n/.test(p)?p.split(/\n[ \t]*\n+/):p.split('\n');return B.map(x=>x.trim()).filter(Boolean)}
-function gMlInfo(){const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
+function gMlInfo(){gFit();const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
   e.textContent=on?(n?`共 ${n} 篇`+(ni>1?(LS.get('gorder','txt')==='pair'?`、${ni} 張圖一對一 ＝ ${Math.max(n,ni)} 次`:` × ${ni} 張圖 ＝ ${n*ni} 次`):''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const go=LS.get('gorder','txt');o.textContent=go==='img'?'🔀 一張圖先跑完全部文字':go==='pair'?`🔀 一對一：第 1 張圖配第 1 篇…（${Math.max(n,ni)} 個）`:'🔀 一篇文字先跑完全部圖'}}
 /* V0.3.39 ⏹ 批量取消：整批（同一次送出的）或全部，一次在電腦上取消（幾百個也是一下子） */
 let GQS={n:0,b:{}},GBSEEN=new Set(),GEXP=new Set();
@@ -1032,7 +1032,7 @@ async function rGen(again){if(again)return gJobs();
     let add=R.filter(([re])=>re.test(v)).map(x=>x[1]).filter(x=>!v.includes(x.slice(0,6)));if(!add.length&&!/不變/.test(v))add=['其他地方保持不變'];if(!add.length)return toast('已經很完整了',1500);
     g.value=v.replace(/[，。,.\s]+$/,'')+'，'+add.join('，');LS.set('gprompt',g.value);toast('🪄 補上了：'+add.join('、'),3000)};
   $('#gpclr').onclick=()=>{const g=$('#gp');if(g.dataset.undo!==undefined&&!g.value){g.value=g.dataset.undo;delete g.dataset.undo;$('#gpclr').textContent='清掉';LS.set('gprompt',g.value);return}if(!g.value)return;g.dataset.undo=g.value;g.value='';LS.set('gprompt','');$('#gpclr').textContent='↶ 復原';g.focus()};
-  {const g=$('#gp'),fit=()=>{if(g.offsetParent===null)return;g.style.height='auto';g.style.height=Math.min(g.scrollHeight+2,Math.round(innerHeight*.6))+'px'};g.addEventListener('input',fit);g.addEventListener('focus',fit);setTimeout(fit,50);   // V0.3.66 提示詞框跟著字變高（最高半個螢幕多）
+  {const g=$('#gp'),fit=gFit;g.addEventListener('input',fit);g.addEventListener('focus',fit);setTimeout(fit,50);   // V0.3.66 提示詞框跟著字變高（最高半個螢幕多）
     g.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();const b=$('#ggo');if(b&&!b.disabled)b.click()}})}   // Ctrl／⌘＋Enter＝開始
   $('#gp').addEventListener('input',()=>{const g=$('#gp');if(g.value&&g.dataset.undo!==undefined){delete g.dataset.undo;$('#gpclr').textContent='清掉'}});
   $('#gpick').addEventListener('click',e=>{if(!e.target.closest('[data-gback]'))return;e.stopPropagation();const p=LS.get('gimg_prev','');if(!p)return;LS.set('gimg_prev',GIMGS[0]||'');GIMGS=[p];GFILES=[];LS.set('gimgs',GIMGS);gPrev();toast('↩ 換回上一張了',1500)},true);   // V0.2.75
@@ -1976,7 +1976,8 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
     if(r.i===0&&r.v.trim())o.t=r.v.trim();else if(r.i===1&&j>0){c.opts.splice(j,1);c.opts.splice(j-1,0,o)}else if(r.i===2){c.opts.splice(j,1);PKS[c.id]=(PKS[c.id]||[]).filter(x=>x!==o.id);LS.set('pksel',PKS)}else return;
     pkSave();pkDraw();pkPrev()})}
 function gFinal(noML){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml=!noML&&$('#gml')&&$('#gml').checked,x=pkSuffix();const B=ml?(t?gSplit(t):[]):(t?[t]:[]);const L=(B.length?B:(x?['']:[])).flatMap(pkAll).filter(Boolean);return (noML?L.slice(0,1):L).flatMap(gExpand).slice(0,50)}
-function pkPrev(){const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
+function gFit(){const g=$('#gp');if(!g||g.offsetParent===null)return;g.style.height='auto';g.style.height=Math.min(g.scrollHeight+2,Math.round(innerHeight*.6))+'px'}   // V0.3.67 範本／積木塞字進去也會自動變高
+function pkPrev(){gFit();const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
   if(!L.length){e.innerHTML='';return}if(L.length===1&&!x&&!/\{[^{}]*\|/.test(t)){e.innerHTML='';return}   // 只有自己打的一句：不用再顯示一次
   const op=LS.get('gfin_o',L.length<=3),hl=s=>{let h=esc(s);if(x)h=h.replace(esc(x),`<i>${esc(x)}</i>`);return h};
   e.innerHTML=`<div class="gfin"><div class="h"><b>📝 會送出 ${L.length} 個提示詞${L.some(q=>q.includes('〔🎲'))?`（🎲 每個做 ${+($('#gc')||{}).value||1} 張、各隨機）`:''}</b>${x?`<button class="pill" id="pkM" title="把積木的字寫進上面，之後可以自己改">⬆ 積木合併到上面</button><button class="pill er" id="pkC">清除積木</button>`:''}<button class="pill" id="gfinT">${op?'收起':'看全部'}</button></div>
