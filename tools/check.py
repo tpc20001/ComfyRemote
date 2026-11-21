@@ -268,6 +268,17 @@ def t_gen():
         time.sleep(0.2)
         if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (sj,))[0] in ('done', 'fail'): break
     assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (sj,))[0] == 'done', '重排後沒有做完'
+    # V0.3.48 卡住兩次：沒有可以換的流程 → 跳過，後面的繼續
+    F.STATE['hang'] = True; (sj2,) = E.gen_add('GROK 改圖', '卡兩次', img); (nx,) = E.gen_add('GROK 改圖', '下一張', img)
+    for _ in range(200):
+        time.sleep(0.1)
+        if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (sj2,))[0] == 'fail': break
+    F.STATE['hang'] = False
+    assert E.db.one('SELECT state, msg FROM gen_jobs WHERE id=?', (sj2,))[0] == 'fail', E.db.one('SELECT state, msg FROM gen_jobs WHERE id=?', (sj2,))
+    for _ in range(100):
+        time.sleep(0.2)
+        if E.db.one('SELECT state FROM gen_jobs WHERE id=?', (nx,))[0] == 'done': break
+    assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (nx,))[0] == 'done', '跳過之後下一張沒有接著做'
     E.cfg.set('gen_stall_min', 8); E.cfg.set('gen_stall_auto_min', 20); E.cfg.set('gen_lost_check_sec', 15)
     print('    ✔ ComfyUI 弄丟工作 → 重新送出；卡住 → 提醒、自動中斷清記憶體重排')
     i2 = E.gen_save_input(F.png(9, 9), 't2')

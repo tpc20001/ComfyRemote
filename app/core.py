@@ -2719,7 +2719,18 @@ class Engine:
                 except Exception as ex: self.log.w(f'生圖：#{jid} 接著排下一個失敗：{ex}')
             self.gen_done[0] += 1; self.done(t, 'done', f'{len(outs)} 個檔，運算 {run_s:.1f} 秒'); self.log.w(f'生圖：#{jid} 完成 {len(outs)} 個檔，運算 {run_s:.1f} 秒（全部 {dur:.1f} 秒，{"冷啟動" if cold == 1 else "熱" if cold == 0 else "?"}）　⏱ {self.prof_brief(J.get("_prof"))}')
         except InterruptedError:
-            if J.get('requeue') and not self.stop_all:
+            nrs = (getattr(self, 'gen_restarted', {}) or {}).get(jid, 0)
+            if J.get('requeue') and not self.stop_all and nrs >= 2 and J.get('auto_rs'):   # V0.3.48 卡住兩次：改用比較省記憶體的流程重做；沒有可以換的就跳過，後面的繼續
+                alt = {'GROK 改圖（INT8 快）': 'Qwen 2.1 Turbo 改圖', '兩張圖合併（INT8 快）': self.QM_NAME}.get(J.get('wf') or '')
+                if alt and self.cfg.get('gen_stall_switch') is not False and (self.gen_wf_path(alt) or Path('/nonexist')).exists():
+                    self.db.x("UPDATE gen_jobs SET state='wait', wf=?, params='{}', msg=? WHERE id=?", (alt, f'卡住兩次，改用「{alt}」（比較省記憶體）重做', jid))
+                    with self.lock: self.gen_q.appendleft(jid)
+                    self.log.w(f'生圖：#{jid} 卡住兩次，改用「{alt}」重做'); self.done(t, 'stop', f'卡住兩次，改用 {alt}'); J['requeue'] = False
+                else:
+                    msg = '卡住兩次（多半記憶體不夠），先跳過，後面的繼續'
+                    self.db.x("UPDATE gen_jobs SET state='fail', msg=?, t1=? WHERE id=?", (msg, time.time(), jid)); self.log.w(f'生圖：#{jid} {msg}'); self.done(t, 'fail', msg)
+                    J['requeue'] = False
+            elif J.get('requeue') and not self.stop_all:
                 self.db.x("UPDATE gen_jobs SET state='wait', msg='' WHERE id=?", (jid,))
                 with self.lock: self.gen_q.appendleft(jid)
                 self.done(t, 'stop', '停止（放回排隊）')
