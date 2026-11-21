@@ -1008,7 +1008,7 @@ async function rGen(again){if(again)return gJobs();
   <div id="gpicks" class="gpicks"><div id="gpick" class="drop"></div></div><input type="file" id="gf" accept="image/*" multiple style="display:none"><input type="file" id="gf2" multiple style="display:none">
   <div class="gsrc" id="gfolder"><button class="gchip" id="gf2b">📁 從資料夾選</button><button class="gchip" id="gfvb">🎞 從影片挑格</button><button class="gchip" id="grcb">🕘 最近用過</button></div><div class="crec" id="grec"></div><div id="gmrec"></div><input type="file" id="gfv" accept="video/*" style="display:none"></section>
   <section class="gcard"><div class="ghd"><span class="gnum">2</span><b>想怎麼改</b><span class="grow"></span><button class="gclr" id="gpfix" title="依你寫的內容，自動補上「哪些地方要保持不變」" style="margin-right:6px;border-color:var(--accent);color:var(--accent)">🪄 補完整</button><button class="gclr" id="gpclr" title="清掉提示詞（可以復原）">清掉</button></div>
-  <div class="gmrg" id="gmrg"></div><textarea id="gp" rows="3" placeholder="想怎麼改？例如：把衣服換成紅色連身裙"></textarea>
+  <div class="gmrg" id="gmrg"></div><textarea id="gp" rows="3" placeholder="想怎麼改？例如：把衣服換成紅色連身裙（電腦：Ctrl＋Enter 直接開始）"></textarea>
   <label class="gmlb"><input type="checkbox" id="gml" ${LS.get('gml',false)?'checked':''}><span>多篇文字：用<b>空行</b>隔開，每篇做一次　<span class="mu" id="gmln"></span></span></label><button class="pill" id="gord" hidden title="多張圖＋多篇文字時，排隊的順序"></button>
   <div id="gpkx"></div>
   <div class="gtabs" id="gtabs"><button data-gt="pk">🏷 積木</button><button data-gt="pl">📚 範本</button><button data-gt="tool">🧰 工具箱</button><button data-gt="fav">⭐ 常用</button></div>
@@ -1032,6 +1032,8 @@ async function rGen(again){if(again)return gJobs();
     let add=R.filter(([re])=>re.test(v)).map(x=>x[1]).filter(x=>!v.includes(x.slice(0,6)));if(!add.length&&!/不變/.test(v))add=['其他地方保持不變'];if(!add.length)return toast('已經很完整了',1500);
     g.value=v.replace(/[，。,.\s]+$/,'')+'，'+add.join('，');LS.set('gprompt',g.value);toast('🪄 補上了：'+add.join('、'),3000)};
   $('#gpclr').onclick=()=>{const g=$('#gp');if(g.dataset.undo!==undefined&&!g.value){g.value=g.dataset.undo;delete g.dataset.undo;$('#gpclr').textContent='清掉';LS.set('gprompt',g.value);return}if(!g.value)return;g.dataset.undo=g.value;g.value='';LS.set('gprompt','');$('#gpclr').textContent='↶ 復原';g.focus()};
+  {const g=$('#gp'),fit=()=>{if(g.offsetParent===null)return;g.style.height='auto';g.style.height=Math.min(g.scrollHeight+2,Math.round(innerHeight*.6))+'px'};g.addEventListener('input',fit);g.addEventListener('focus',fit);setTimeout(fit,50);   // V0.3.66 提示詞框跟著字變高（最高半個螢幕多）
+    g.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();const b=$('#ggo');if(b&&!b.disabled)b.click()}})}   // Ctrl／⌘＋Enter＝開始
   $('#gp').addEventListener('input',()=>{const g=$('#gp');if(g.value&&g.dataset.undo!==undefined){delete g.dataset.undo;$('#gpclr').textContent='清掉'}});
   $('#gpick').addEventListener('click',e=>{if(!e.target.closest('[data-gback]'))return;e.stopPropagation();const p=LS.get('gimg_prev','');if(!p)return;LS.set('gimg_prev',GIMGS[0]||'');GIMGS=[p];GFILES=[];LS.set('gimgs',GIMGS);gPrev();toast('↩ 換回上一張了',1500)},true);   // V0.2.75
   $('#gpick').onclick=e=>{const cx=e.target.closest('[data-gcrop]');if(cx){e.stopPropagation();crOpen(+cx.dataset.gcrop);return}const mx=e.target.closest('[data-gmask]');if(mx){e.stopPropagation();mkOpen(+mx.dataset.gmask);return}const x=e.target.closest('[data-gdel]');if(x){e.stopPropagation();gDel(+x.dataset.gdel);return}
