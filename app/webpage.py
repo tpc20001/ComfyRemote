@@ -1927,13 +1927,20 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
   box.innerHTML=`<details class="gadv" id="gpkd" ${op?'open':''}><summary>🏷 提示詞積木 <span class="mu">點選項＝加在上面那段後面；不選就不加</span></summary>
   ${PKT.cats.length?'':'<div class="mu" style="font-size:13px;padding:4px 2px 8px">還沒有分類：按「＋ 新分類」建一個（例如：場景），再按它的「＋」加選項。</div>'}
   ${PKT.cats.map(c=>{const fold=(LS.get('pkfold',{}))[c.id],ns=(PKS[c.id]||[]).length,sn=c.opts.filter(o=>(PKS[c.id]||[]).includes(o.id)).map(o=>o.t).join('、');return `<div class="pkC"><div class="pkCn" data-cn="${c.id}">${fold?'▸':'▾'} ${esc(c.name)} <small>${c.each?'📚 選幾個做幾種':c.multi?'可複選':'單選'}・${c.opts.length} 個${ns?'・選了 '+ns:''}・長按改</small>${fold&&sn?`<div class="mu" style="font-weight:400;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sn)}</div>`:''}</div>${fold?'':`<div class="pkOs">${c.opts.map(o=>`<button class="pkO${(PKS[c.id]||[]).includes(o.id)?' on':''}" data-c="${c.id}" data-o="${o.id}">${esc(o.t)}</button>`).join('')}<button class="pkAdd" data-add="${c.id}">＋</button></div>`}</div>`}).join('')}
-  <div class="row" style="gap:8px;margin-top:6px;align-items:center"><button class="pill" id="pkNew">＋ 新分類</button><span class="mu" style="font-size:12px">點分類名稱收合；長按分類名稱或選項：改名、編輯、刪除</span></div></details>`;
+  <div class="row" style="gap:8px;margin-top:6px;align-items:center;flex-wrap:wrap"><button class="pill" id="pkNew">＋ 新分類</button><button class="pill" id="pkExp" title="積木和範本存成一個檔（備份、搬到別台電腦）">⬇ 匯出</button><button class="pill" id="pkImp">⬆ 匯入</button><input type="file" id="pkImpF" accept=".json,application/json" style="display:none"><span class="mu" style="font-size:12px">點分類名稱收合；長按分類名稱或選項：改名、編輯、刪除</span></div></details>`;
   $('#gpkd').ontoggle=()=>LS.set('gpk_o',$('#gpkd').open);
   box.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const c=PKT.cats.find(x=>x.id===b.dataset.c);if(!c)return;let S=PKS[c.id]||[];const id=b.dataset.o;
     S=S.includes(id)?S.filter(x=>x!==id):(c.multi?[...S,id]:[id]);PKS[c.id]=S;LS.set('pksel',PKS);pkDraw();pkPrev()});
   box.querySelectorAll('[data-cn]').forEach(b=>b.onclick=()=>{const F=LS.get('pkfold',{});F[b.dataset.cn]=!F[b.dataset.cn];LS.set('pkfold',F);pkDraw()});   // V0.3.51 點分類名稱收合
   box.querySelectorAll('[data-add]').forEach(b=>b.onclick=async()=>{const c=PKT.cats.find(x=>x.id===b.dataset.add);const r=await pkAsk(`「${c.name}」加一個選項`,'',[['加上去','g'],['取消']]);
     if(r.i!==0)return;const L=r.v.split(/\n+/).map(x=>x.trim()).filter(Boolean);if(!L.length)return;for(const t of L)c.opts.push({id:pkId(),t});pkSave();pkDraw()});
+  $('#pkExp').onclick=()=>{const b=new Blob([JSON.stringify({app:'ComfyRemote',kind:'prompt_kit',v:1,cats:PKT.cats,docs:PKT.docs},null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='ComfyRemote_積木範本_'+new Date().toISOString().slice(0,10)+'.json';document.body.appendChild(a);a.click();a.remove();toast('⬇ 匯出了（積木 '+PKT.cats.length+' 類、範本 '+PKT.docs.length+' 篇）',3000)};   // V0.3.52 匯出／匯入
+  $('#pkImp').onclick=()=>$('#pkImpF').click();
+  $('#pkImpF').onchange=async e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(x){return toast('✖ 不是積木的匯出檔')}if(!d||!Array.isArray(d.cats))return toast('✖ 不是積木的匯出檔');
+    const r=await pkAsk(`匯入：積木 ${d.cats.length} 類、範本 ${(d.docs||[]).length} 篇`,null,[['合併（同名分類合在一起）','g'],['全部換掉','er'],['取消']]);if(r.i<0||r.i>1)return;
+    if(r.i===1){PKT={cats:d.cats,docs:d.docs||[]};PKS={};LS.set('pksel',PKS)}else{for(const c of d.cats){const o=PKT.cats.find(x=>x.name===c.name);if(!o){PKT.cats.push({...c,id:pkId()});continue}for(const op of c.opts||[])if(!o.opts.some(x=>x.t===op.t))o.opts.push({id:pkId(),t:op.t})}
+      for(const dc of d.docs||[])if(!PKT.docs.some(x=>x.text===dc.text))PKT.docs.push({...dc,id:pkId()})}
+    await pkSave();pkDraw();pdDraw();pkPrev();toast('⬆ 匯入好了',2500)};
   $('#pkNew').onclick=async()=>{const r=await pkAsk('新分類的名稱（例如：場景、上衣、動作）','',[['單選（選一個）','g'],['可複選'],['取消']]);if(r.i<0||r.i>1||!r.v.trim())return;
     PKT.cats.push({id:pkId(),name:r.v.trim(),multi:r.i===1,opts:[]});pkSave();pkDraw();toast('建好了：按它的「＋」加選項',3000)};
   pkLP(box,'[data-cn]',async el=>{const i=PKT.cats.findIndex(x=>x.id===el.dataset.cn),c=PKT.cats[i];if(!c)return;
