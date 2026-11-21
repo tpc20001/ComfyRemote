@@ -1538,7 +1538,7 @@ async function rHist(again){if(again)return hPoll();
   <div class="seg" id="hvw" style="margin-bottom:6px"></div><div class="mu" id="htip" style="margin:-2px 0 6px"></div>
   <div class="row" id="hmode" style="gap:6px;flex-wrap:wrap;margin:8px 0 2px"></div>
   <details class="gadv hflt" id="hflt"><summary>🔍 搜尋／篩選 <span class="mu" id="hfn"></span></summary>
-  <div class="row"><input id="hq" class="gsel" placeholder="搜尋提示詞或 #編號"><button class="pill" id="hgo">🔍</button></div><div class="gtcat" id="hpk" style="margin-top:6px"></div>
+  <div class="row"><input id="hq" class="gsel" placeholder="搜尋提示詞或 #編號"><button class="pill" id="hgo">🔍</button><button class="pill" id="hclr" title="清除所有篩選">✕ 清除</button></div><div class="gtcat" id="hpk" style="margin-top:6px"></div>
   <div class="row" style="margin-top:6px"><select id="hs"><option value="">全部狀態</option><option value="done">✔ 完成</option><option value="fail">✖ 失敗</option><option value="stop">⏹ 取消</option><option value="wait">⏳ 排隊</option></select><select id="hw" class="gsel"><option value="">全部流程</option></select></div>
   <details id="hsd" style="margin-top:8px"><summary><b>📊 時間統計</b> <span class="mu">每種設定平均跑多久（拿來預估時間）</span></summary><div id="hst" class="mu">讀取中…</div></details></details></div>
   <div class="row" style="margin:0 0 8px"><button class="pill" id="hsel">☑ 選取</button><button class="pill" id="hcmp">▤ 精簡</button><span class="grow"></span><button class="pill" id="hfold" title="全部收起">⊟</button><button class="pill" id="hopen" title="全部展開">⊞</button></div>
@@ -1551,7 +1551,8 @@ async function rHist(again){if(again)return hPoll();
   $('#hvw').onclick=e=>{const b=e.target.closest('[data-v]');if(!b)return;HVIEW=b.dataset.v;LS.set('hview',HVIEW);if(HSEL)HSEL.clear();hLoad(true)};
   {const hk=async()=>{if(!PKL)await pkLoad();const e=$('#hpk');if(!e)return;const O=PKT.cats.flatMap(c=>c.opts.map(o=>o.t)).filter(t=>t.length<=20).slice(0,30);   // V0.3.56 用積木的字快速搜尋歷史
     e.innerHTML=O.length?'<span class="mu" style="font-size:12px;margin-right:4px">🏷 快速找：</span>'+O.map(t=>`<button class="gpc" data-hk="${esc(t)}">${esc(t)}</button>`).join(''):'';e.onclick=ev=>{const b=ev.target.closest('[data-hk]');if(!b)return;$('#hq').value=$('#hq').value===b.dataset.hk?'':b.dataset.hk;hLoad(true)}};hk()}
-  $('#hgo').onclick=()=>hLoad(true);$('#hq').onkeydown=e=>{if(e.key==='Enter')hLoad(true)};$('#hs').onchange=$('#hw').onchange=()=>hLoad(true);
+  $('#hgo').onclick=()=>hLoad(true);$('#hq').onkeydown=e=>{if(e.key==='Enter')hLoad(true)};{let tq=0;$('#hq').oninput=()=>{clearTimeout(tq);tq=setTimeout(()=>hLoad(true),450)}}$('#hclr').onclick=()=>{$('#hq').value='';$('#hs').value='';$('#hw').value='';LS.set('hmode','');hLoad(true)};   // V0.3.68 打字就搜尋、一鍵清除
+  $('#hs').onchange=$('#hw').onchange=()=>hLoad(true);
   $('#hm').onclick=()=>hLoad(false);$('#hl').onclick=hClick;$('#hsd').ontoggle=()=>{if($('#hsd').open)hStats()};hLoad(true)}
 
 
