@@ -329,7 +329,7 @@ nav button{font-size:13.5px;white-space:nowrap}
 #hl details.hday>summary:before{content:'▸';color:var(--sub)}#hl details.hday[open]>summary:before{content:'▾'}
 details.hgrp{border-radius:14px}
 .gdh{display:flex;align-items:baseline;gap:8px;margin:12px 0 8px;border-top:1px solid var(--line);padding-top:12px}.gdh b{color:var(--strong)}
-.gdi{position:relative;display:block}.gdv{display:block;width:100%;margin-top:4px;border:0;border-radius:8px;padding:6px 0;font-size:11.5px;font-weight:800;background:rgba(0,0,0,.65);color:#fff}.gdi i{position:absolute;left:4px;top:4px;font-style:normal;font-size:12px;background:rgba(0,0,0,.55);border-radius:8px;padding:1px 4px;pointer-events:none}.gdi i.m{left:auto;right:4px}.gdi i.v{top:auto;bottom:6px;color:#ffc53d;font-weight:800}
+.gdi{position:relative;display:block}.gdv{display:block;width:100%;margin-top:4px;border:0;border-radius:8px;padding:6px 0;font-size:11.5px;font-weight:800;background:rgba(0,0,0,.65);color:#fff}.gdi i{position:absolute;left:4px;top:4px;font-style:normal;font-size:12px;background:rgba(0,0,0,.55);border-radius:8px;padding:1px 4px;pointer-events:none}.gdi i.m{left:auto;right:4px}.gdi i.v{top:auto;bottom:6px;color:#ffc53d;font-weight:800}.gdi i.n{left:auto;right:4px;top:auto;bottom:6px;font-weight:800}
 .gds{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}.gds img,.gds video{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;cursor:zoom-in;background:var(--panel)}
 .gwq{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:8px}.gwq:empty{display:none}.gwq .mu{font-size:12px}
 body.dragon #gpick,body.dragon #cpick{outline:3px dashed #8b5cf6;outline-offset:6px;border-radius:14px}
@@ -986,8 +986,8 @@ async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;
   const hb=[],seenW=new Set();for(const x of act){const bk=x.batch||x.id;if(x.state==='wait'&&seenW.has(bk)&&!GEXP.has(bk))continue;if(x.state==='wait'){seenW.add(bk);const m=(GQS.b[String(bk)]||0)-1;hb.push(gCard(x));if(m>0&&!GEXP.has(bk))hb.push(`<div class="gfin gfold" data-gexp="${bk}" style="cursor:pointer;margin-top:-4px"><div class="h"><b style="flex:1 1 auto">📚 同一批還有 ${m} 張在排隊</b><span class="mu">點一下展開</span><button class="pill er" data-g="cancelb" data-id="${bk}">⏹ 取消這一批</button></div></div>`);continue}hb.push(gCard(x))}   // V0.3.61 批量的排隊卡片收成一張
   const h=hb.join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」 · 做好的在「歷史紀錄」${nd?`（最近 ${nd} 張）`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
   // 剛做好的（最近 1 小時）：直接在這裡看，不用切到歷史紀錄
-  const now=Date.now()/1000+GOFF,D=GJ.filter(x=>x.state==='done'&&x.outs&&x.outs.length&&now-(x.t1||x.t)<3600&&!x.cmp).slice(0,12);
-  const dh=D.length?`<div class="gdh"><b>✨ 剛做好</b><span class="mu">點圖放大（左右換）</span></div><div class="gds">${D.map(x=>x.outs.slice(0,1).map(o=>ISV(o)?`<span class="gdi"><video src="${IMGU(o)}#t=0.5" muted playsinline preload="metadata" controls></video><button class="gdv" data-g="vnext" data-id="${x.id}" data-v="${esc(o)}">⏭ 接下一段</button></span>`:`<span class="gdi"><img src="${IMGT(o)}" data-big="${esc(o)}" data-id="${x.id}" data-i="0" loading="lazy">${(BIG.find(b=>b[0]===x.wf)||[])[1]?`<i>${BIG.find(b=>b[0]===x.wf)[1]}</i>`:''}${x.mask?'<i class="m">🖌</i>':''}${x.vote?`<i class="v">★${x.vote}</i>`:''}</span>`).join('')).join('')}</div>`:'';
+  const now=Date.now()/1000+GOFF,D=GJ.filter(x=>x.state==='done'&&x.outs&&x.outs.length&&now-(x.t1||x.t)<3600&&!x.cmp),DN=D.length;D.splice(12);
+  const dh=D.length?`<div class="gdh"><b>✨ 剛做好</b><span class="mu" style="flex:1 1 auto">最近 1 小時 ${DN} 個 · 點圖放大（左右換）</span><button class="pill" data-g="gohist">📚 看全部</button></div><div class="gds">${D.map(x=>x.outs.slice(0,1).map(o=>ISV(o)?`<span class="gdi"><video src="${IMGU(o)}#t=0.5" muted playsinline preload="metadata" controls></video><button class="gdv" data-g="vnext" data-id="${x.id}" data-v="${esc(o)}">⏭ 接下一段</button></span>`:`<span class="gdi"><img src="${IMGT(o)}" data-big="${esc(o)}" data-id="${x.id}" data-i="0" loading="lazy">${(BIG.find(b=>b[0]===x.wf)||[])[1]?`<i>${BIG.find(b=>b[0]===x.wf)[1]}</i>`:''}${x.mask?'<i class="m">🖌</i>':''}${x.vote?`<i class="v">★${x.vote}</i>`:''}${x.outs.length>1?`<i class="n">+${x.outs.length-1}</i>`:''}</span>`).join('')).join('')}</div>`:'';
   const gd=$('#gdone');if(gd&&gd.dataset.h!==dh){gd.dataset.h=dh;gd.innerHTML=dh}}
 // V0.1.82 做好通知＋全部做完的時間：手機震一下＋叮一聲（設定可關）；切到別的 App 時分頁標題會變「✅ 做好了」，回來看到就恢復
 const TITLE0=document.title;let GAUD=null;
@@ -1307,6 +1307,7 @@ async function gClick(e){{const fx=e.target.closest('[data-gexp]');if(fx&&!e.tar
   if(im){ovOpen(im);return}
   const b=e.target.closest('[data-g]');if(!b)return;const a=b.dataset.g,id=+b.dataset.id;
   if(a==='fill'){const J=GJ.concat(HJ).find(x=>x.id===id);if(J)gFill(J);return}
+  if(a==='gohist'){CUR='hist';LS.set('tab','hist');tabs();show();scrollTo(0,0);return}   // V0.3.65 ✨剛做好 → 看全部
   if(a==='bench'){if(!confirm('用這張圖和提示詞，排一組速度測試？\n（GROK 改圖（INT8 快）、Qwen 2.1 Turbo 各跑一張比速度和畫質；同一個種子，每個模型先暖機一張；大約 5～10 分鐘）'))return;const r=await api(U('/api/bench',{id}),{});toast(r.message||'失敗',7000);return}
   if(a==='tocmp'){const J=GJ.concat(HJ).find(x=>x.id===id);if(!J)return;CI=[J.img];CF=[];LS.set('cmp_imgs',CI);LS.set('cmp_prompt',J.prompt||'');CUR='cmp';LS.set('tab','cmp');tabs();show();scrollTo(0,0);toast('已經把照片和提示詞帶過去了：勾想比的模型，按「開始比較」',3500);return}
   if(a==='vgif'){toast('轉 GIF 中（電腦上用 ffmpeg，幾秒鐘）…',30000);const x=await api('/api/gen_act',{a:'gif',id,f:b.dataset.v});if(!x.ok)return toast(x.message||'失敗',5000);
