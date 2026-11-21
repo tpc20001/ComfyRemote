@@ -1,5 +1,12 @@
 [
  {
+  "version": "0.3.40",
+  "date": "2026-11-21",
+  "items": [
+   "🤝 跟 SortCut、GoPro Fusion 360（FusionStitch）握手分電腦效能（共用規則第 3 版）：ComfyRemote 生圖時最優先拿 80%、另外兩個各 5%；平常 GoPro 45%／SortCut 45%（只有一個在做就給它 90%）；永遠留 10% 給你；手機右上角「Lv」（電腦版狀態列「🤝 Lv」）：看三個程式各分到多少、勾選這台電腦有誰參與、調分配、ComfyRemote 的 Lv 1～10"
+  ]
+ },
+ {
   "version": "0.3.39",
   "date": "2026-11-21",
   "items": [

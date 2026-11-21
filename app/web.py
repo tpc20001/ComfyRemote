@@ -674,6 +674,13 @@ class WebServer:
         if not b: return Resp(204, b'', 'text/plain')
         return Resp(200, b, 'image/png' if b[:4] == b'\x89PNG' else 'image/jpeg', {'Cache-Control': 'no-store'})
 
+    # ---- V0.3.40 🤝 握手（SortCut／FusionStitch）：右上角 Lv 畫面
+    def api_hs(self, req):
+        import hslink
+        if hslink._S.get('hs') is None: hslink.bind(eng=self.E(), ver=self.version, port=0)   # 沒有桌面視窗（測試）時
+        if req.method != 'POST': return jresp(hslink.info())
+        return jresp(hslink.set_(req.json() or {}))
+
     # ---- V0.3.36 ☁ 雲端更新（GitHub Releases）：看狀態／檢查／更新／略過／取消
     def api_cloud(self, req):
         import cloudupd

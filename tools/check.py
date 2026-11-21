@@ -180,6 +180,36 @@ def t_cloud():
     finally: httpd.shutdown()
 
 
+def t_hs():
+    """V0.3.40 🤝 握手規則第 3 版：CR 生圖時 80／5／5（留 10）、平常 45／45、只有一個 → 90、沒勾的不算、Lv 上限；hslink 的狀態."""
+    old = os.environ.get('LOCALAPPDATA'); os.environ['LOCALAPPDATA'] = tempfile.mkdtemp()
+    try:
+        import importlib, app_handshake as H; importlib.reload(H)
+        A = lambda **w: {a: v['cap'] for a, v in H.alloc3({a: {'app': a, 'want': x} for a, x in w.items()}).items()}
+        assert A(ComfyRemote=2, FusionStitch=2, SortCut=2) == {'ComfyRemote': 80, 'FusionStitch': 5, 'SortCut': 5}
+        assert A(ComfyRemote=0, FusionStitch=2, SortCut=2)['FusionStitch'] == 45 and A(ComfyRemote=0, FusionStitch=0, SortCut=2)['SortCut'] == 90
+        assert A(ComfyRemote=2, FusionStitch=0, SortCut=0)['ComfyRemote'] == 90
+        H.set_policy3('t', members=['ComfyRemote', 'SortCut']); r = A(ComfyRemote=2, FusionStitch=2, SortCut=2); assert 'FusionStitch' not in r and r['SortCut'] == 5, r
+        d = H.decide_with({'app': 'FusionStitch', 'want': 2, 'on': True}, [{'app': 'ComfyRemote', 'want': 2}]); assert d['mode'] == 'alone' and d['cpu_cap'] is None and '沒有勾' in d['why']
+        H.set_policy3('t', members=[], lv={'SortCut': 3}); assert A(FusionStitch=2, SortCut=2)['SortCut'] == 30
+        H.set_policy3('t', on=False); d = H.decide_with({'app': 'SortCut', 'want': 2, 'on': True}, [{'app': 'FusionStitch', 'want': 2}]); assert d['mode'] == 'split'   # 關掉第 3 版 → 第 2 版
+        H.set_policy3('t', on=True, lv={'SortCut': 10})
+        H.set_policy(by='FS', share={'FusionStitch': 40}); assert H.policy3()['on'] and H.policy3()['lv']['SortCut'] == 10   # 舊版改 policy.json 不會弄掉第 3 版的設定
+        import hslink, types
+        E = types.SimpleNamespace(gen_active={1: {}}, gen_q=[2, 3], log=types.SimpleNamespace(w=lambda m: None))
+        hslink._S['hs'] = None; hs = hslink.bind(eng=E, ver='0.3.40', port=0)
+        try:
+            hs.write(); I = hslink.info(); me = [a for a in I['apps'] if a['app'] == 'ComfyRemote'][0]
+            assert I['ok'] and me['want'] == 2 and '排隊 2 張' in me['what'] and I['rules'] == 3, I
+            r = hslink.set_({'members': ['ComfyRemote', 'FusionStitch', 'SortCut', 'TikLive']}); assert r['p3']['members'] == []   # 全勾＝看到誰算誰
+            r = hslink.set_({'lv': {'ComfyRemote': 7}, 'reserve': 15}); assert r['lv'] == 7 and r['p3']['reserve'] == 15
+            assert (H.lib_dir() / 'app_handshake_r3.py').exists() or (time.sleep(2.5) or (H.lib_dir() / 'app_handshake_r3.py').exists())   # 放進 lib：別的程式自動用新規則
+        finally: hslink.stop()
+    finally:
+        if old is None: os.environ.pop('LOCALAPPDATA', None)
+        else: os.environ['LOCALAPPDATA'] = old
+
+
 def t_js():
     """手機網頁的 JavaScript 文法檢查（有 node 才檢查）：錯一個括號整頁就白了."""
     import shutil as _sh
@@ -647,5 +677,5 @@ print('UI_OK')
 
 if __name__ == '__main__':
     print('檢查中…')
-    for n, f in (('編譯所有 .py', t_compile), ('引擎：背景工作、暫停、熱更新交接', t_engine), ('手機網頁：登入、API、頁面', t_web), ('手機網頁 JavaScript 文法', t_js), ('手機網頁壓縮（gzip）', t_gzip), ('平板看圖（網址帶登入碼）', t_imgk), ('📸 IG 下載', t_ig), ('☁ 雲端更新', t_cloud), ('🎨 生圖：假 ComfyUI 跑完整流程', t_gen), ('畫面：主視窗＋熱更新', t_ui)): step(n, f)
+    for n, f in (('編譯所有 .py', t_compile), ('引擎：背景工作、暫停、熱更新交接', t_engine), ('手機網頁：登入、API、頁面', t_web), ('手機網頁 JavaScript 文法', t_js), ('手機網頁壓縮（gzip）', t_gzip), ('平板看圖（網址帶登入碼）', t_imgk), ('📸 IG 下載', t_ig), ('☁ 雲端更新', t_cloud), ('🤝 握手（規則第 3 版）', t_hs), ('🎨 生圖：假 ComfyUI 跑完整流程', t_gen), ('畫面：主視窗＋熱更新', t_ui)): step(n, f)
     print('全部通過 ✔' if all(OK) else '有沒過的 ✖（上面紅字）'); sys.exit(0 if all(OK) else 1)

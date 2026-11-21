@@ -17,12 +17,13 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.39'
+APP_VERSION = '0.3.40'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
 import web  # noqa: E402
 import cloudupd  # noqa: E402
+import hslink  # noqa: E402
 from core import fmt_t, fmt_b, BRAND  # noqa: E402
 
 APP_TITLE = BRAND['title']
@@ -2218,7 +2219,10 @@ class Main(QMainWindow):
         zl = QLabel('介面大小'); zl.setObjectName('muted')
         self.b_bgst = QPushButton(''); self.b_bgst.setObjectName('pill'); self.b_bgst.setToolTip('後台：暫停中／讓路中的項目（點一下到「後台狀態」）'); self.b_bgst.hide()
         self.b_bgst.clicked.connect(lambda: self.nav.setCurrentRow(1))
-        for w_ in (self.b_bgst, self.b_theme, zl, self.b_zm, self.zoom_l, self.b_zp): sb.addPermanentWidget(w_)
+        self.b_hs = QPushButton('🤝 Lv'); self.b_hs.setObjectName('pill'); self.b_hs.setToolTip('🤝 跟 SortCut、GoPro Fusion 360 分電腦效能（Lv 1～10、誰參與、分配）')   # V0.3.40
+        self.b_hs.clicked.connect(lambda: QDesktopServices.openUrl(QUrl(f'http://127.0.0.1:{int(ENG.cfg.get("web_port") or BRAND["web_port"])}/?pc=1&hs=1')))
+        self._hs_t = QTimer(self); self._hs_t.timeout.connect(self._hs_paint); self._hs_t.start(5000)
+        for w_ in (self.b_hs, self.b_bgst, self.b_theme, zl, self.b_zm, self.zoom_l, self.b_zp): sb.addPermanentWidget(w_)
         self.b_theme.clicked.connect(lambda: self.set_theme('light' if THEME_MODE['mode'] == 'dark' else 'dark'))
         self.b_zm.clicked.connect(lambda: self.set_zoom(THEME_MODE['zoom'] - 10)); self.b_zp.clicked.connect(lambda: self.set_zoom(THEME_MODE['zoom'] + 10))
         self.pf = None
@@ -2336,8 +2340,16 @@ class Main(QMainWindow):
             for z in (ROOT / 'UPDATE').glob('*_Shell_L*.zip'):
                 (ENG.data / 'cloud').mkdir(parents=True, exist_ok=True); os.replace(str(z), str(ENG.data / 'cloud' / z.name)); upd_log(f'把 UPDATE 裡的 {z.name} 移到 Data\\cloud（它是 EXE 外殼，不是程式更新包）')
         except Exception: pass
+        try: hslink.bind(eng=ENG, ver=APP_VERSION, port=int(ENG.cfg.get('web_port') or BRAND['web_port']))   # V0.3.40 🤝 跟 SortCut／FusionStitch 握手
+        except Exception: ENG.log.err('握手：啟動')
         try: cloudupd.shell_ok_later(ROOT, BRAND['id'] + '.exe'); cloudupd.loop_start()
         except Exception: ENG.log.err('雲端更新：啟動')
+
+    def _hs_paint(self):
+        try:
+            I = hslink.info()
+            if I.get('ok'): self.b_hs.setText(f"🤝 Lv{I['lv']}" + (f" · {I['cap']:.0f}%" if I.get('cap') is not None else '')); self.b_hs.setToolTip('🤝 ' + str(I.get('why') or '') + '\n點一下：Lv 1～10、這台有誰參與、分配')
+        except Exception: pass
 
     def _cloud_bar(self, m):
         if self._handoff: return
@@ -2488,7 +2500,10 @@ class Main(QMainWindow):
             s_ = web_server(create=False)
             if s_ is not None: s_.close()
         except Exception: pass
-        mark_clean_exit(); ENG.shutdown(); e.accept(); QApplication.instance().quit()
+        mark_clean_exit()
+        try: hslink.stop()
+        except Exception: pass
+        ENG.shutdown(); e.accept(); QApplication.instance().quit()
 
     def really_quit(self):
         busy = sum(ENG.bg_running(k) for k, _i, _n in ENG.BG_KINDS)

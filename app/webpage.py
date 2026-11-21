@@ -348,6 +348,16 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .ovbot button:active{background:rgba(139,92,246,.55)}.ovbot button:disabled{opacity:.3}.ovbot span{min-width:64px;text-align:center;color:#ccc;font-size:13px}
 @media (max-width:820px){.ovnav{display:none!important}}
 @media (max-width:385px){.logo{font-size:0!important;gap:0}.logo i{margin-right:0}}@media (max-width:385px) and (min-width:0){#sysFab button{padding-left:8px!important;padding-right:8px!important}}
+/* V0.3.40 🤝 握手 Lv */
+.hslv{font-size:12px;font-weight:800;border:1px solid var(--line);background:var(--card);color:var(--strong);border-radius:9px;padding:2px 8px;margin-right:6px;white-space:nowrap}.hslv.boost{border-color:var(--green);color:var(--green)}.hslv.yield{border-color:var(--orange);color:var(--orange)}
+#hsOv{position:fixed;inset:0;z-index:2147482000;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:max(14px,env(safe-area-inset-top)) 10px 14px;overflow:auto}
+#hsOv .hsW{width:min(560px,100%);background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px}
+#hsOv h3{margin:0 0 8px;font-size:17px;color:var(--strong);display:flex;align-items:center;gap:8px}#hsOv h3{flex-wrap:wrap}#hsOv .hsRow span{white-space:nowrap}
+#hsOv .hsA{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--card)}#hsOv .hsA.off{opacity:.5}
+#hsOv .hsA .t{display:flex;gap:8px;align-items:center}#hsOv .hsA b{flex:1}#hsOv .hsA .pc{font-weight:800;font-size:16px}
+#hsOv .hsBar{height:6px;border-radius:4px;background:var(--line);margin-top:6px;overflow:hidden}#hsOv .hsBar i{display:block;height:100%;background:var(--accent)}
+#hsOv .hsRow{display:flex;gap:8px;align-items:center;margin:10px 0 4px;font-size:13.5px}#hsOv .hsRow input[type=range]{flex:1}
+#hsOv .lvs{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}#hsOv .lvs button{flex:1;min-width:36px;padding:6px 0;border-radius:8px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700}#hsOv .lvs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 /* V0.3.36 ☁ 雲端更新 */
 #tabs button.cun::after{content:"☁";font-size:12px;margin-left:3px;vertical-align:super}
 .cup{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;background:var(--card)}.cup .cuh{font-weight:700;color:var(--strong)}.cup ul{margin:6px 0 0;padding-left:20px;font-size:13px}.cup .cubs{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.cup .cubs .btn{flex:1;min-width:110px}.cup .cuw{margin-top:8px;padding:8px;border-radius:10px;border:1px solid var(--orange);font-size:13px}.cup .cubar{height:6px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}.cup .cubar i{display:block;height:100%;background:var(--accent)}.cup label{display:flex;gap:8px;align-items:center;font-size:13px;margin-top:10px;color:var(--sub)}
@@ -388,7 +398,7 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .igck{margin-top:12px;border:1px solid var(--line2);border-radius:12px;padding:8px 12px}.igck summary{cursor:pointer;font-weight:700;font-size:14px}.igck summary small{font-weight:400;opacity:.7}.igckB{font-size:13px;line-height:1.6}.igckB ol{padding-left:20px;margin:6px 0}.igckB input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:inherit;margin:6px 0}.igckR{display:flex;gap:8px}.igckR .btn{flex:1}   /* TK_V1.0.80 */
 .igdA textarea{width:100%;min-height:84px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px;font-size:15px}.igdA .btn{margin-top:8px;width:100%}#igm{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:13.5px;background:var(--card);border:1px solid var(--line)}#igm.err{border-color:var(--red)}#igm.ok{border-color:var(--green)}.igdDir{font-size:12px;color:var(--sub);margin-top:8px;display:flex;gap:8px;align-items:center}.igdDir button{font-size:12px;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--sub)}
 </style></head><body>
-<header><div class="bar"><div class="logo"><i></i>__NAME__</div><div class="rt"><span class="ver" id="ver" title="程式版本">V__VER__</span></div></div>
+<header><div class="bar"><div class="logo"><i></i>__NAME__</div><div class="rt"><button class="hslv" id="hslv" title="🤝 跟 SortCut、GoPro Fusion 360 分電腦效能">Lv–</button><span class="ver" id="ver" title="程式版本">V__VER__</span></div></div>
 <nav id="tabs"></nav></header>
 <main id="v"></main>
 <div class="toast" id="toast"></div>
@@ -1868,6 +1878,32 @@ async function updPane(){const p=$('#spane');const cur=$('#ver').textContent.rep
    <label class="btn ufile">📦 選擇更新包（.zip）<input type="file" id="updF" accept=".zip,application/zip,application/x-zip-compressed,application/octet-stream"></label><div id="updR"></div></div>
    <div class="srow" style="border-bottom:0;margin-top:4px"><b>⏪ 退回前面的版本</b><div class="snote" style="margin:0 0 8px">更新後如果出問題，可以退回更新前的版本（用每次更新前自動做的備份，一樣不用關程式）。</div><div id="rbList">讀取中…</div></div></section>`;
   $('#updF').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(f)updUpload(f)};rbLoad();cuDraw()}
+/* V0.3.40 🤝 右上角 Lv：跟 SortCut、GoPro Fusion 360（FusionStitch）分電腦效能（共用規則第 3 版） */
+let HSI=null;
+async function hsGet(){try{HSI=await api('/api/hs')}catch(e){HSI=null}const b=$('#hslv');if(b&&HSI&&HSI.ok){b.textContent='Lv'+HSI.lv+(HSI.cap!=null?` · ${Math.round(HSI.cap)}%`:'');b.className='hslv'+(HSI.mode==='lead'&&HSI.apps.find(a=>a.app===HSI.me&&a.want>=2)?' boost':HSI.mode==='yield'?' yield':'')}return HSI}
+function hsInit(){const b=$('#hslv');if(!b||b._on)return;b._on=1;b.onclick=hsOpen;hsGet();setInterval(()=>{if(!document.hidden)hsGet()},10000)}
+async function hsSet(d){const r=await api('/api/hs',d);if(r&&r.ok){HSI=r;hsDraw()}else toast((r&&r.message)||'改不了',3000)}
+function hsOpen(){if($('#hsOv'))return;const o=document.createElement('div');o.id='hsOv';o.innerHTML='<div class="hsW" id="hsW">讀取中…</div>';o.onclick=e=>{if(e.target===o)o.remove()};document.body.appendChild(o);hsGet().then(hsDraw);
+  const iv=setInterval(()=>{if(!$('#hsOv'))return clearInterval(iv);hsGet().then(()=>{if(!document.activeElement||document.activeElement.type!=='range')hsDraw()})},3000)}
+function hsDraw(){const w=$('#hsW');if(!w)return;const I=HSI;if(!I||!I.ok){w.innerHTML='🤝 握手還沒開始（電腦上的 ComfyRemote 要開著）';return}const P=I.p3,WT=['閒著','背景小工作','在做事','使用者在等'];
+  const fs=P.normal.FusionStitch||45,sc=P.normal.SortCut||45,fsp=Math.round(100*fs/(fs+sc));
+  w.innerHTML=`<h3>🤝 電腦效能分配 <span class="mu" style="font-size:12px;font-weight:400">規則第 ${I.rules} 版${I.rules_from==='lib'?'（別的程式的新版）':''}</span><button class="pill" id="hsX" style="margin-left:auto">✖ 關閉</button></h3>
+  <div class="mu" style="font-size:13px">同一台電腦的程式互相讓：ComfyRemote 在生圖時最優先（${P.boost}%），其他的各 ${P.boost_others}%；平常 FusionStitch／SortCut 照下面的比例分；永遠留 ${P.reserve}% 給你用電腦。</div>
+  <div class="mu" style="margin:10px 0 2px;font-weight:700">這台電腦有誰參與（沒勾的不管它、也不限制它）</div>
+  ${I.apps.map(a=>`<div class="hsA${a.member?'':' off'}"><div class="t"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}><b>${esc(a.name)}${a.app===I.me?'（這個）':''}</b><span class="mu">${a.on?'● 開著'+(a.ver?' V'+esc(a.ver):''):'○ 沒開'}</span><span class="pc">${a.member&&a.cap!=null&&a.on?Math.round(a.cap)+'%':''}</span></div>
+    ${a.on&&a.member?`<div class="mu" style="font-size:12.5px;margin-top:3px">${esc(WT[a.want]||'')}${a.what?'：'+esc(a.what):''}　Lv${a.lv}${a.why?'　· '+esc(a.why):''}</div><div class="hsBar"><i style="width:${Math.min(100,a.cap||0)}%"></i></div>`:''}</div>`).join('')}
+  <div class="hsRow"><span>平常分配</span><span>GoPro ${fsp}</span><input type="range" id="hsN" min="10" max="90" step="5" value="${fsp}"><span>${100-fsp} SortCut</span></div>
+  <div class="hsRow"><span>留給你用電腦</span><input type="range" id="hsR" min="0" max="30" step="5" value="${P.reserve}"><b>${P.reserve}%</b></div>
+  <div class="hsRow"><span>ComfyRemote 生圖時拿</span><input type="range" id="hsB" min="40" max="90" step="5" value="${P.boost}"><b>${P.boost}%</b></div>
+  <div class="hsRow"><span>那時其他程式各</span><input type="range" id="hsO" min="0" max="20" step="1" value="${P.boost_others}"><b>${P.boost_others}%</b></div>
+  <div class="mu" style="margin-top:12px;font-weight:700">ComfyRemote 的 Lv（最多跟別人要多少：Lv × 10%）</div>
+  <div class="lvs">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button data-lv="${n}" class="${n===I.lv?'on':''}">${n}</button>`).join('')}</div>
+  <div class="mu" style="font-size:12px;margin-top:10px">設定存在電腦的 %LOCALAPPDATA%\\AppHandshake\\policy3.json，三個程式共用：在哪一個改都一樣。${I.err?'<br>⚠ '+esc(I.err):''}</div>`;
+  $('#hsX').onclick=()=>$('#hsOv').remove();
+  w.querySelectorAll('[data-mem]').forEach(c=>c.onchange=()=>hsSet({members:[...w.querySelectorAll('[data-mem]')].filter(x=>x.checked).map(x=>x.dataset.mem)}));
+  w.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>hsSet({lv:{[I.me]:+b.dataset.lv}}));
+  const rg=(id,f)=>{const e=$(id);e.oninput=()=>{const t=e.nextElementSibling;if(t&&t.tagName==='B')t.textContent=e.value+'%';else if(id==='#hsN'){e.previousElementSibling.textContent='GoPro '+e.value;t.textContent=(100-e.value)+' SortCut'}};e.onchange=()=>hsSet(f(+e.value))};
+  rg('#hsN',v=>({normal:{FusionStitch:v*0.9,SortCut:(100-v)*0.9}}));rg('#hsR',v=>({reserve:v}));rg('#hsB',v=>({boost:v}));rg('#hsO',v=>({boost_others:v}))}
 /* V0.3.36 ☁ 雲端更新（GitHub Releases）：有新版只提示，按「更新」才下載；要換 EXE 時，有生圖在做會先列出來 */
 let CUI=null,CUT=0;
 async function cuGet(){try{CUI=await api('/api/cloud')}catch(e){CUI=null}cuBadge();return CUI}
@@ -1919,7 +1955,7 @@ async function rbLoad(){const L=$('#rbList');if(!L)return;let j;try{j=await api(
       m.innerHTML=r.ok?`<span class="uok">✔ ${esc(r.message)}</span>`:`<span class="ubad">✖ ${esc(r.message||'失敗')}</span>`;if(r.ok)setTimeout(()=>location.reload(),9000)}})}
 
 async function boot(){let h={};try{h=await (await fetch('/api/hello',{headers:{'x-app-token':TOK}})).json()}catch(e){$('#v').innerHTML='<div class="empty">連不到電腦（Tailscale 有開嗎？電腦開著嗎？）</div>';return}
-  $('#ver').textContent='V'+h.ver;if(!h.authed)return showLogin();tabs();show();sysFabInit();setTimeout(cuGet,3000);setInterval(()=>{if(!document.hidden)cuGet()},600000)}
+  $('#ver').textContent='V'+h.ver;if(!h.authed)return showLogin();tabs();show();sysFabInit();hsInit();if(new URLSearchParams(location.search).get('hs'))setTimeout(hsOpen,500);setTimeout(cuGet,3000);setInterval(()=>{if(!document.hidden)cuGet()},600000)}
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
 </script></body></html>
