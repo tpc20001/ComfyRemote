@@ -1981,6 +1981,7 @@ function pdDraw(){const box=$('#gpl');if(!box)return;const op=LS.get('gpl_o',fal
 /* V0.3.40 🤝 右上角 Lv：跟 SortCut、GoPro Fusion 360（FusionStitch）分電腦效能（共用規則第 3 版） */
 let HSI=null;
 async function hsGet(){try{HSI=await api('/api/hs')}catch(e){HSI=null}const b=$('#hslv');if(b&&HSI&&HSI.ok){b.textContent='Lv'+HSI.lv+(HSI.cap!=null?` · ${Math.round(HSI.cap)}%`:'');b.className='hslv'+(HSI.mode==='lead'&&HSI.apps.find(a=>a.app===HSI.me&&a.want>=2)?' boost':HSI.mode==='yield'?' yield':'')}return HSI}
+function hsUse(u){u=u||{};const L=[];if(u.vram_gb!=null)L.push(`佔顯示卡記憶體 ${u.vram_gb} GB`);if(u.vram_total_gb)L.push(`ComfyUI 看到顯示卡記憶體剩 ${u.vram_free_gb}／${u.vram_total_gb} GB`);if(u.ram_total_gb)L.push(`RAM 剩 ${u.ram_free_gb}／${u.ram_total_gb} GB`);return L.length?'<br>🧠 '+L.join('・'):''}
 function hsInit(){const b=$('#hslv');if(!b||b._on)return;b._on=1;b.onclick=hsOpen;hsGet();setInterval(()=>{if(!document.hidden)hsGet()},10000)}
 async function hsSet(d){const r=await api('/api/hs',d);if(r&&r.ok){HSI=r;hsDraw()}else toast((r&&r.message)||'改不了',3000)}
 function hsOpen(){if($('#hsOv'))return;const o=document.createElement('div');o.id='hsOv';o.innerHTML='<div class="hsW" id="hsW">讀取中…</div>';o.onclick=e=>{if(e.target===o)o.remove()};document.body.appendChild(o);hsGet().then(hsDraw);
@@ -1991,7 +1992,7 @@ function hsDraw(){const w=$('#hsW');if(!w)return;const I=HSI;if(!I||!I.ok){w.inn
   <div class="mu" style="font-size:13px">同一台電腦的程式互相讓：ComfyRemote 在生圖時最優先（${P.boost}%），其他的各 ${P.boost_others}%；平常 FusionStitch／SortCut 照下面的比例分；永遠留 ${P.reserve}% 給你用電腦。</div>
   <div class="mu" style="margin:10px 0 2px;font-weight:700">這台電腦有誰參與（沒勾的不管它、也不限制它）</div>
   ${I.apps.filter(a=>a.on).map(a=>`<div class="hsA${a.member?'':' off'}"><div class="t"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}><b>${esc(a.name)}${a.app===I.me?'（這個）':''}</b><span class="mu">${a.on?'● 開著'+(a.ver?' V'+esc(a.ver):''):'○ 沒開'}</span><span class="pc">${a.member&&a.cap!=null&&a.on?Math.round(a.cap)+'%':''}</span></div>
-    ${a.on&&a.member?`<div class="mu" style="font-size:12.5px;margin-top:3px">${esc(WT[a.want]||'')}${a.what?'：'+esc(a.what):''}　Lv${a.lv}${a.why?'　· '+esc(a.why):''}</div><div class="hsBar"><i style="width:${Math.min(100,a.cap||0)}%"></i></div>`:''}</div>`).join('')}
+    ${a.on&&a.member?`<div class="mu" style="font-size:12.5px;margin-top:3px">${esc(WT[a.want]||'')}${a.what?'：'+esc(a.what):''}　Lv${a.lv}${a.why?'　· '+esc(a.why):''}${hsUse(a.use)}</div><div class="hsBar"><i style="width:${Math.min(100,a.cap||0)}%"></i></div>`:''}</div>`).join('')}
   ${I.apps.some(a=>!a.on)?`<div class="mu" style="font-size:12.5px;margin:6px 2px">沒偵測到（沒開或不在這台）：${I.apps.filter(a=>!a.on).map(a=>`<label style="margin-right:10px;white-space:nowrap"><input type="checkbox" data-mem="${esc(a.app)}" ${a.member?'checked':''}> ${esc(a.name)}</label>`).join('')}<br>沒偵測到的不會分效能、也不會讓路給它</div>`:''}
   <div class="hsRow"><span>平常分配</span><span>GoPro ${fsp}</span><input type="range" id="hsN" min="10" max="90" step="5" value="${fsp}"><span>${100-fsp} SortCut</span></div>
   <div class="hsRow"><span>留給你用電腦</span><input type="range" id="hsR" min="0" max="30" step="5" value="${P.reserve}"><b>${P.reserve}%</b></div>

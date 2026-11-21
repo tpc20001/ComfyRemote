@@ -36,7 +36,7 @@ def state():
     E = _S['ctx'].get('eng'); a = q = 0
     try: A = list(E.gen_active.values()); a = len(A); q = len(E.gen_q)
     except Exception: A = []
-    P3 = HS.policy3(); base = {'on': True, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'use': {}, 'max': {}, 'need': {}}
+    P3 = HS.policy3(); base = {'on': True, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'use': _mem(E), 'max': {}, 'need': {}}
     if not (a or q): return {**base, 'want': 0, 'what': ''}
     try:
         if E.bg_hold('gen'): return {**base, 'want': 0, 'what': f'生圖暫停中（排隊 {q} 張）'}
@@ -53,6 +53,16 @@ def state():
     if a and vf is not None and vf < 1.0:
         return {**base, 'want': 2, 'what': what, 'need': {'starved': True, 'vram_free_gb': vf, 'why': f'顯示卡記憶體只剩 {vf:.1f} GB'}}
     return {**base, 'want': 2, 'what': what}
+
+
+def _mem(E):
+    """ComfyUI 回報的顯示卡記憶體、RAM（給 Lv 畫面看是誰佔住）."""
+    try:
+        st = E.comfy_status() or {}; v = st.get('vram') or [None, None]; r = st.get('ram') or [None, None]; G = 2**30; out = {}
+        if v[1]: out.update(vram_free_gb=round((v[0] or 0) / G, 1), vram_total_gb=round(v[1] / G, 1))
+        if r[1]: out.update(ram_free_gb=round((r[0] or 0) / G, 1), ram_total_gb=round(r[1] / G, 1))
+        return out
+    except Exception: return {}
 
 
 def _vram(E):
@@ -84,7 +94,7 @@ def info():
         apps.append({'app': k, 'name': nm, 'on': p is not None, 'ver': (p or {}).get('ver', ''), 'want': int((p or {}).get('want') or 0),
                      'what': (p or {}).get('what', ''), 'member': (not P3['members']) or k in P3['members'], 'lv': P3['lv'].get(k, 10),
                      'cap': (A.get(k) or {}).get('cap'), 'mode': (A.get(k) or {}).get('mode', ''), 'why': (A.get(k) or {}).get('why', ''),
-                     'rules': (p or {}).get('rules')})
+                     'rules': (p or {}).get('rules'), 'use': dict((p or {}).get('use') or {})})
     for k, p in seen.items():                                                   # 不認得的程式也列出來
         if k not in dict(HS.KNOWN):
             apps.append({'app': k, 'name': p.get('name') or k, 'on': True, 'ver': p.get('ver', ''), 'want': int(p.get('want') or 0), 'what': p.get('what', ''),

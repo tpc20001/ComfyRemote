@@ -1103,7 +1103,7 @@ class Engine:
             if url and url != S.get('logged'): S['logged'] = url; self.log.w(f'生圖：連上 ComfyUI {url}')
         st = S.get('stats') or {}; sysi = st.get('system') or {}; dev = (st.get('devices') or [{}])[0] if st.get('devices') else {}
         return {'ok': bool(S['url']), 'url': S['url'], 'err': S['err'], 'ver': sysi.get('comfyui_version', ''), 'gpu': dev.get('name', ''),
-                'vram': [dev.get('vram_free'), dev.get('vram_total')] if dev else None}
+                'vram': [dev.get('vram_free'), dev.get('vram_total')] if dev else None, 'ram': [sysi.get('ram_free'), sysi.get('ram_total')] if sysi.get('ram_total') else None}
 
     def _obj_info(self, C):
         """ComfyUI 節點的說明（欄位型別、下拉選項）。連得上就問（每次開程式每個節點問一次），結果存到 Data\\object_info.json，ComfyUI 關著也有選單."""
