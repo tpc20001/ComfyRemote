@@ -856,7 +856,7 @@ function gTpl(){const box=$('#gtpl');if(!box)return;const open=LS.get('gtpl_o','
 // V0.2.12 開始按鈕上直接寫「會排幾張、大概多久」：照片數 × 張數 × 提示詞行數 × 流程數，時間用你實測的平均
 function gGoLbl(){const b=$('#ggo');if(!b||b.disabled||!GWFS.length)return;const w=gWf();if(!w.name)return;const p=($('#gp')||{}).value||'';
   const np=w.need_img?Math.max(1,GIMGS.length+GFILES.length):1,nc=+($('#gc')||{}).value||1,nl=Math.max(1,/H3|minimax/i.test(w.name||'')?1:gFinal().length);
-  const WL=gBoth()?gBigOn().map(x=>x[0]):[w.name];let n=0,sec=0;WL.forEach(x=>{const k=np*nc*nl;n+=k;sec+=k*(GSPD[x]||(BIG.find(y=>y[0]===x)||[])[3]||(/H3|影片/.test(x)?300:/合併/.test(x)?50:60))});
+  const WL=gBoth()?gBigOn().map(x=>x[0]):[w.name];let n=0,sec=0;const PAIR=LS.get('gorder','txt')==='pair'&&np>1&&nl>1;WL.forEach(x=>{const k=(PAIR?Math.max(np,nl):np*nl)*nc;n+=k;sec+=k*(GSPD[x]||(BIG.find(y=>y[0]===x)||[])[3]||(/H3|影片/.test(x)?300:/合併/.test(x)?50:60))});
   const md=gModeOf(w.name),vb={edit:'改圖',merge:'合併',vid:'做影片',fl:'做影片'}[md]||'開始',un=md==='vid'||md==='fl'?'支':'張';const fl0=md==='fl'&&!(GSF[1]||[]).length&&!(GSI[1]||[]).length;
   const t=fl0?'▶ 先做結束畫面＋影片':(n>1||sec>=60?`▶ ${vb} · ${n} ${un} · 約 ${sec<90?Math.round(sec)+' 秒':Math.round(sec/60)+' 分'}`:`▶ ${vb}`);if(b.textContent!==t)b.textContent=t}
 setInterval(()=>{if(CUR==='gen'&&!document.hidden)gGoLbl()},800);
@@ -912,7 +912,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     if(a1&&a2&&Math.abs(Math.log(a1/a2))>0.15&&!confirm(`首幀和尾幀的比例差很多（${a1>1?'橫':'直'}的 vs ${a2>1?'橫':'直'}的），影片會照首幀的比例，尾幀可能被裁掉或拉歪。\n建議兩張用一樣比例的照片（例如尾幀用改圖從首幀做出來，比例就一定一樣）。還是要開始？`))return}
   let many=w.need_img?(GFILES.length+GIMGS.length):1;for(let i=1;i<NS;i++)many*=((GSF[i]||[]).length||(GSI[i]||[]).length);
   const NT=/H3|minimax/i.test(w.name)?1:Math.max(1,gFinal().length);   // V0.3.38 多篇文字
-  if(many>1&&!confirm(NT>1?`批量：${many} 張照片 × ${NT} 篇文字 × ${$('#gc').value} 張 = ${many*NT*+$('#gc').value} 個工作。\n順序：${LS.get('gorder','txt')==='img'?'一張圖先跑完全部文字':'一篇文字先跑完全部圖'}（可以按「🔀 順序」切換）`:`批量：${many} 張照片 × ${$('#gc').value} 張 = ${many*+$('#gc').value} 個工作，都用同一段提示詞？`))return;if(!p&&!(w.cr||{}).blank_ok&&!confirm('沒有打提示詞，照流程原本的跑？'))return;
+  if(many>1&&NT>1&&LS.get('gorder','txt')==='pair'){if(!confirm(`一對一：${many} 張照片配 ${NT} 篇文字（第 1 張配第 1 篇…，少的那邊從頭輪）＝ ${Math.max(many,NT)*+$('#gc').value} 個工作`))return}else if(many>1&&!confirm(NT>1?`批量：${many} 張照片 × ${NT} 篇文字 × ${$('#gc').value} 張 = ${many*NT*+$('#gc').value} 個工作。\n順序：${LS.get('gorder','txt')==='img'?'一張圖先跑完全部文字':'一篇文字先跑完全部圖'}（可以按「🔀 順序」切換）`:`批量：${many} 張照片 × ${$('#gc').value} 張 = ${many*+$('#gc').value} 個工作，都用同一段提示詞？`))return;if(!p&&!(w.cr||{}).blank_ok&&!confirm('沒有打提示詞，照流程原本的跑？'))return;
   const b=$('#ggo');b.disabled=true;try{
     if(GFILES.length&&w.need_img){const FS=GFILES.slice(),N=[];FS.forEach(f=>f._taken=true);for(let i=0;i<FS.length;i++){toast(`照片上傳中… ${i+1}／${FS.length}`,60000);let nm=null;
         if(FS[i]._p)try{nm=await FS[i]._p}catch(e){}
@@ -933,7 +933,8 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
     const MP2=['兩張圖合併（INT8 快）','兩張圖合併（Qwen 快）'];const WL=gBoth()?gBigOn().map(b=>b[0]):LS.get('gboth_m',false)&&MP2.includes(w.name)&&MP2.every(n=>GWFS.some(x=>x.name===n))?MP2.slice():[w.name];   // 🔁 兩個都跑：快的先排，先看到結果
     WL.sort((a,b)=>(GSPD[a]||99)-(GSPD[b]||99));
     const FS=PL.length>1?Math.floor(Math.random()*2147483000)+1:0;   // V0.2.70 好幾種寫法一起試：用同一個種子，比較公平（差別只來自提示詞）
-    let J0=0;for(const wn of WL){body.wf=wn;body.params=LS.get('gpar:'+wn,{});if(FS&&wn===$('#gw').value){const sid=(GDEF.flatMap(g=>g.items).find(it=>it.type==='seed')||{}).id;if(sid&&!(sid in body.params))body.params=Object.assign({},body.params,{[sid]:FS})}const IMO=LS.get('gorder','txt')==='img'&&PL.length>1&&NS<=1&&body.imgs.length>1;   // V0.3.38 🔀 一張圖先跑完全部文字
+    let J0=0;for(const wn of WL){body.wf=wn;body.params=LS.get('gpar:'+wn,{});if(FS&&wn===$('#gw').value){const sid=(GDEF.flatMap(g=>g.items).find(it=>it.type==='seed')||{}).id;if(sid&&!(sid in body.params))body.params=Object.assign({},body.params,{[sid]:FS})}const PR=LS.get('gorder','txt')==='pair'&&PL.length>1&&NS<=1&&body.imgs.length>1;if(PR){const IM0=body.imgs,MK0=body.masks,N=Math.max(IM0.length,PL.length);for(let i=0;i<N;i++){const im=IM0[i%IM0.length];body.imgs=[im];body.masks=MK0[im]?{[im]:MK0[im]}:{};body.prompt=PL[i%PL.length]+KP;if(J0)body.join=J0;r=await api('/api/gen_run',body);if(!r.ok)break;tot+=(r.ids||[]).length;if(!J0)J0=(r.ids||[])[0]||0}body.imgs=IM0;body.masks=MK0;if(!r.ok)break;continue}   // V0.3.57 一對一
+      const IMO=LS.get('gorder','txt')==='img'&&PL.length>1&&NS<=1&&body.imgs.length>1;   // V0.3.38 🔀 一張圖先跑完全部文字
       const IG=IMO?body.imgs.map(x=>[x]):[body.imgs],IM0=body.imgs,MK0=body.masks;
       for(const ig of IG){for(const q of PL){body.prompt=q+KP;body.imgs=ig;if(IMO){body.masks={};for(const n of ig)if(MK0[n])body.masks[n]=MK0[n]}const MANY=WL.length>1||PL.length>1;if(MANY&&J0)body.join=J0;r=await api('/api/gen_run',body);if(!r.ok)break;tot+=(r.ids||[]).length;if(MANY&&!J0)J0=(r.ids||[])[0]||0}if(!r.ok)break}body.imgs=IM0;body.masks=MK0;if(!r.ok)break}
     if(r.ok&&WL.length>1)r.message=`兩個流程都排了，共 ${tot} 張（快的先跑）`;
@@ -941,7 +942,7 @@ async function gGo(){const w=gWf();if(!w.name)return toast('先選流程');const
 /* V0.3.38 多篇文字：有空行 → 用空行分篇（一篇可以有好幾行）；沒有空行 → 跟以前一樣每一行一篇。最多 50 篇 */
 function gSplit(p){p=String(p||'').replace(/\r/g,'');const B=/\n[ \t]*\n/.test(p)?p.split(/\n[ \t]*\n+/):p.split('\n');return B.map(x=>x.trim()).filter(Boolean)}
 function gMlInfo(){const e=$('#gmln');if(!e)return;const on=$('#gml')&&$('#gml').checked,n=on?gSplit($('#gp').value).length:0,ni=GIMGS.length+GFILES.length;
-  e.textContent=on?(n?`共 ${n} 篇`+(ni>1?` × ${ni} 張圖 ＝ ${n*ni} 次`:''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const im=LS.get('gorder','txt')==='img';o.textContent=im?'🔀 順序：一張圖先跑完全部文字':'🔀 順序：一篇文字先跑完全部圖'}}
+  e.textContent=on?(n?`共 ${n} 篇`+(ni>1?(LS.get('gorder','txt')==='pair'?`、${ni} 張圖一對一 ＝ ${Math.max(n,ni)} 次`:` × ${ni} 張圖 ＝ ${n*ni} 次`):''):'（還沒有文字）'):'';const o=$('#gord');if(o){o.hidden=!(on&&n>1&&ni>1);const go=LS.get('gorder','txt');o.textContent=go==='img'?'🔀 一張圖先跑完全部文字':go==='pair'?`🔀 一對一：第 1 張圖配第 1 篇…（${Math.max(n,ni)} 個）`:'🔀 一篇文字先跑完全部圖'}}
 /* V0.3.39 ⏹ 批量取消：整批（同一次送出的）或全部，一次在電腦上取消（幾百個也是一下子） */
 let GQS={n:0,b:{}},GBSEEN=new Set();
 async function gCancelMany(batch){const n=batch?(GQS.b[String(batch)]||0):GQS.n,run=GJ.filter(x=>x.state==='run'&&(!batch||(x.batch||x.id)===batch));
@@ -1015,7 +1016,7 @@ async function rGen(again){if(again)return gJobs();
   <div class="gqual" id="gqual"></div><div class="gqual" id="gdur"></div><div class="gqual" id="gtst"></div><div class="gqual" id="gden"></div><div class="gwq" id="gwq"></div><div id="gwi"></div><div id="gmod"></div><details id="gadv" class="gadv"><summary>⚙ 進階設定 <span class="mu">一般不用動</span></summary><div id="gpar"></div></details></section>
   <div class="ggobar"><button class="ggo" id="ggo">▶ 開始</button></div>
   <section class="gcard"><div class="ghd"><b style="white-space:nowrap">⏳ 製作中</b><span class="grow"></span><button class="gclr" id="gcanall" style="display:none;white-space:nowrap">⏹ 全取消</button></div><div class="mu" id="geta" style="margin:-4px 0 8px">做好的在「歷史紀錄」</div><div id="gj"></div><div id="gdone"></div></section><div style="text-align:center;margin:4px 0 18px"><button class="gclr" id="greset" title="照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）">🧹 全部重來</button></div></div>`;
-  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>{LS.set('gprompt',$('#gp').value);gMlInfo();pkPrev()};$('#gml').onchange=()=>{LS.set('gml',$('#gml').checked);gMlInfo();pkPrev()};$('#gord').onclick=()=>{LS.set('gorder',LS.get('gorder','txt')==='img'?'txt':'img');gMlInfo();toast($('#gord').textContent,2500)};setTimeout(gMlInfo,50);if(PKL){pkDraw();pdDraw();pkPrev()}else pkLoad();setTimeout(gTabs,60);gPl();gTpl();gRef();gMaskLoad();gTour();
+  GLAST='';$('#gp').value=LS.get('gprompt','');$('#gp').oninput=()=>{LS.set('gprompt',$('#gp').value);gMlInfo();pkPrev()};$('#gml').onchange=()=>{LS.set('gml',$('#gml').checked);gMlInfo();pkPrev()};$('#gord').onclick=()=>{const c=LS.get('gorder','txt');LS.set('gorder',c==='txt'?'img':c==='img'?'pair':'txt');gMlInfo();gGoLbl&&gGoLbl();toast($('#gord').textContent,2500)};setTimeout(gMlInfo,50);if(PKL){pkDraw();pdDraw();pkPrev()}else pkLoad();setTimeout(gTabs,60);gPl();gTpl();gRef();gMaskLoad();gTour();
   $('#greset').onclick=()=>{if(!confirm('全部重來？照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）'))return;
     GIMGS=[];GFILES=[];LS.set('gimgs',[]);GMASK.clear();LS.set('gmask',{});GREF=null;LS.set('gref','');LS.set('gboth',false);LS.set('gkeep',false);LS.set('gml',false);
     const g=$('#gp');g.value='';g.rows=3;LS.set('gprompt','');$('#gml').checked=false;gPrev();gRef();gTpl();gWfInfo();scrollTo(0,0);toast('🧹 清乾淨了，選新照片吧',2000)};
