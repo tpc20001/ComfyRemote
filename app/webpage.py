@@ -411,7 +411,8 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .tkdSyncL{display:flex;gap:8px;align-items:center;margin:10px 2px 0;font-size:13.5px}.tkdSyncL input{width:20px;height:20px}.tkdGo{display:flex;gap:8px;margin-top:10px}.tkdGo .btn{flex:1;font-size:15px;padding:12px 6px}   /* TK_V1.0.82 */
 .igck{margin-top:12px;border:1px solid var(--line2);border-radius:12px;padding:8px 12px}.igck summary{cursor:pointer;font-weight:700;font-size:14px}.igck summary small{font-weight:400;opacity:.7}.igckB{font-size:13px;line-height:1.6}.igckB ol{padding-left:20px;margin:6px 0}.igckB input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:inherit;margin:6px 0}.igckR{display:flex;gap:8px}.igckR .btn{flex:1}   /* TK_V1.0.80 */
 .igdA textarea{width:100%;min-height:84px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px;font-size:15px}.igdA .btn{margin-top:8px;width:100%}#igm{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:13.5px;background:var(--card);border:1px solid var(--line)}#igm.err{border-color:var(--red)}#igm.ok{border-color:var(--green)}.igdDir{font-size:12px;color:var(--sub);margin-top:8px;display:flex;gap:8px;align-items:center}.igdDir button{font-size:12px;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--sub)}
-</style></head><body>
+#totop{position:fixed;right:12px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:9600;width:42px;height:42px;border-radius:50%;border:1px solid var(--line2);background:var(--panel);color:var(--strong);font-size:18px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;cursor:pointer}#totop.on{display:block}
+</style></head><body><button id="totop" title="回到最上面" onclick="scrollTo({top:0,behavior:'smooth'})">⬆</button>
 <header><div class="bar"><div class="logo"><i></i>__NAME__</div><div class="rt"><button class="hslv" id="hslv" title="🤝 跟 SortCut、GoPro Fusion 360 分電腦效能">Lv–</button><span class="ver" id="ver" title="程式版本">V__VER__</span></div></div>
 <nav id="tabs"></nav></header>
 <main id="v"></main>
@@ -458,6 +459,8 @@ const TABS=[['gen','🎨 生圖',rGen,''],['cmp','🧪 比較',rCmp,''],['hist',
 let CUR=new URLSearchParams(location.search).get('tab')||LS.get('tab','gen'),TIMER=null;if(!TABS.find(x=>x[0]===CUR))CUR='gen';
 function tabs(){$('#tabs').innerHTML=TABS.map(([k,n,_f,c])=>`<button data-t="${k}" class="${k===CUR?'on':''} ${c}">${n}${k==='gen'?'<em id="nrun" hidden></em>':''}</button>`).join('');
   $$('#tabs button').forEach(b=>b.onclick=()=>{CUR=b.dataset.t;LS.set('tab',CUR);tabs();show();scrollTo(0,0)});hh();if(typeof cuBadge==='function'&&CUI)cuBadge()}
+// V0.3.70 歷史紀錄／IG 很長時，右下角出現 ⬆ 回到最上面
+addEventListener('scroll',()=>{const b=document.getElementById('totop');if(b)b.classList.toggle('on',scrollY>1400&&(CUR==='hist'||CUR==='ig'))},{passive:true});
 function show(){clearInterval(TIMER);if(CUR!=='hist'){HSEL=null;const b=$('#hsb');if(b)b.remove()}const t=TABS.find(x=>x[0]===CUR)||TABS[0];t[2]();TIMER=setInterval(()=>{if(!document.hidden)t[2](true)},2000)}
 
 // ================= 🎨 生圖：選照片 → 打提示詞 → （調參數）→ 開始；電腦上的 ComfyUI 跑完結果自動出現在下面
