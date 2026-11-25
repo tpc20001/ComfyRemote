@@ -45,6 +45,8 @@ DEFAULTS = {
     'lab': {},                                   # 🧪 實驗工作區的開關 {名稱: True/False}
     'demo_n': 2,                                 # 示範背景工作：同時幾個
     # 🎨 ComfyUI 生圖
+    'comfy_restart_h': 24,                       # V0.3.72 每幾小時趁空檔重開 ComfyUI（0＝不要）
+    'comfy_restart_stall': True,                 # V0.3.72 卡住第二次：先重開 ComfyUI 再試
     'comfy_url': '',                             # 空的＝自動找（Desktop 8000、免安裝版 8188）
     'gen_wf': 'GROK 改圖',                        # 預設用哪個流程（Data\workflows\<名稱>.json）
     'gen_timeout_min': 60,                       # 一張超過幾分鐘算失敗
@@ -1102,7 +1104,9 @@ class Engine:
                 except Exception as ex: url, st = '', str(ex)
             if not url and (not known or force or S.get('bad', 0) >= 1):
                 url, st = comfy.find_url(self.cfg.get('comfy_url') or known)
-            if url: S.update(url=url, stats=st, err='', bad=0, ok_t=time.time())
+            if url:
+                if not S.get('url'): S['up_t'] = time.time()                    # 剛連上（剛開／重開過）：重新算「開了多久」
+                S.update(url=url, stats=st, err='', bad=0, ok_t=time.time())
             else:
                 S['bad'] = S.get('bad', 0) + 1
                 if not known or S['bad'] >= 2 and time.time() - S.get('ok_t', 0) > 20: S.update(url='', stats=None, err=str(st))
@@ -2020,6 +2024,68 @@ class Engine:
             return {'ok': True, 'message': '🚀 叫 ComfyUI 打開了（啟動大約 1～2 分鐘，好了會自動接著做）'}
         except Exception as ex: return {'ok': False, 'message': f'打不開 ComfyUI：{ex}'}
 
+    def _comfy_pids(self):
+        """V0.3.72 ComfyUI 的程式：佔著 ComfyUI 連接埠的那個（python）＋Comfy Desktop 本體（ComfyUI.exe）."""
+        if os.name != 'nt': return []
+        NW = 0x08000000; P = set()
+        try: port = urllib.parse.urlsplit(self.comfy_st.get('url') or self.cfg.get('comfy_url') or 'http://127.0.0.1:8000').port or 8000
+        except Exception: port = 8000
+        try:
+            out = subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, timeout=15, creationflags=NW).stdout
+            for l in out.splitlines():
+                f = l.split()
+                if len(f) >= 5 and f[3].upper() == 'LISTENING' and f[1].rsplit(':', 1)[-1] == str(port) and f[4].isdigit(): P.add(int(f[4]))
+        except Exception as ex: self.log.w(f'生圖：找 ComfyUI 程式失敗：{ex}')
+        exe = os.path.basename(self.comfy_exe() or 'ComfyUI.exe')
+        if exe.lower().endswith('.exe'):
+            try:
+                out = subprocess.run(['tasklist', '/FI', f'IMAGENAME eq {exe}', '/FO', 'CSV', '/NH'], capture_output=True, text=True, timeout=15, creationflags=NW).stdout
+                for l in out.splitlines():
+                    f = [x.strip('"') for x in l.split('","')]
+                    if len(f) > 1 and f[1].isdigit(): P.add(int(f[1]))
+            except Exception: pass
+        P.discard(os.getpid()); P.discard(0)
+        return sorted(P)
+
+    def comfy_restart(self, why='手機'):
+        """V0.3.72 🔄 重開 ComfyUI：關掉（連子程式一起）→ 等它真的關了 → 再打開。正在做的工作會自動放回排隊，ComfyUI 好了接著做.
+        只重開，不更新（要更新等你在電腦前自己決定）。"""
+        if getattr(self, '_comfy_rs_busy', False): return {'ok': False, 'message': '正在重開 ComfyUI 了，等一下'}
+        exe = self.comfy_exe()
+        if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式：先到「設定 → 生圖」填 ComfyUI 的位置（Comfy Desktop 的 ComfyUI.exe，或免安裝版的 run_nvidia_gpu.bat），重開後才打得開'}
+        self._comfy_rs_busy = True
+        def go():
+            try:
+                P = self._comfy_pids(); self.log.w(f'生圖：🔄 重開 ComfyUI（{why}）：關掉 {P or "（沒找到在跑的）"}')
+                for pid in P:
+                    try: subprocess.run(['taskkill', '/PID', str(pid), '/T', '/F'], capture_output=True, timeout=20, creationflags=0x08000000)
+                    except Exception: pass
+                for _ in range(30):                                              # 等它關乾淨（最多 30 秒）
+                    if not self._comfy_pids(): break
+                    time.sleep(1)
+                time.sleep(3); self.comfy_st.update(t=0, url='', stats=None, err='重開中', bad=2, ok_t=0); self._comfy_launch_t = 0
+                r = self.comfy_launch(why + '：重開'); self._comfy_rs_t = time.time()
+                if not r.get('ok'): self.log.w('生圖：重開 ComfyUI：' + r.get('message', ''))
+            except Exception: self.log.err('重開 ComfyUI')
+            finally: self._comfy_rs_busy = False
+        threading.Thread(target=go, name='ComfyRestart', daemon=True).start()
+        return {'ok': True, 'message': '🔄 重開 ComfyUI 中：先關掉、再打開（大約 1～2 分鐘）。正在做的會放回排隊，好了自動接著做'}
+
+    def _comfy_daily(self):
+        """V0.3.72 每 comfy_restart_h 小時（預設 24）趁空檔重開一次 ComfyUI：這邊沒排隊、沒在做、閒了 10 分鐘以上才動."""
+        h = float(self.cfg.get('comfy_restart_h') or 0)
+        if h <= 0 or self.gen_q or self.gen_active or not self.comfy_exe(): return
+        S = self.comfy_st; now = time.time()
+        if not S.get('url'): return
+        up = S.setdefault('up_t', now)
+        if now - up < h * 3600 or now - getattr(self, '_gen_idle_t', now) < 600: return
+        if now - getattr(self, '_comfy_rs_t', 0) < h * 3600: S['up_t'] = getattr(self, '_comfy_rs_t', now); return
+        try:
+            q = comfy.Comfy(S['url']).queue()
+            if q.get('queue_running') or q.get('queue_pending'): return       # ComfyUI 自己還有工作（別的地方送的）→ 不動
+        except Exception: return
+        S['up_t'] = now; self.comfy_restart(f'每 {h:g} 小時趁空檔重開')
+
     def gen_cancel_many(self, batch=0, run=False):
         """V0.3.39 ⏹ 批量取消：batch＝只取消這一批（同一次送出的），0＝全部；run＝連正在跑的也中斷。一次改完（幾百個也很快）."""
         b = int(batch or 0); n = 0
@@ -2359,6 +2425,8 @@ class Engine:
     def _gen_boss(self):
         while self.alive():
             try:
+                if self.gen_q or self.gen_active: self._gen_idle_t = time.time()
+                elif time.time() - getattr(self, '_daily_ck', 0) > 60: self._daily_ck = time.time(); self._comfy_daily()   # V0.3.72 每天趁空檔重開 ComfyUI
                 if self.gen_active: self.comfy_status()                       # V0.3.71 做的時候也更新顯示卡記憶體（握手只看這份，不自己連線）
                 if self.gen_q or self.gen_active: self._gen_busy_t = time.time()
                 elif getattr(self, '_gen_busy_t', 0) and time.time() - self._gen_busy_t > 60 and self.cfg.get('gen_free_idle') is not False:   # 全部做完 1 分鐘：叫 ComfyUI 把模型清出記憶體（整晚跑完，電腦不用一直佔著 12GB＋幾十 GB 記憶體）
@@ -2429,7 +2497,11 @@ class Engine:
                     except Exception: pass
                     try: C.free(); self._last_wf = None
                     except Exception: pass
-                    self.gen_restarted = getattr(self, 'gen_restarted', {}); self.gen_restarted[jid] = self.gen_restarted.get(jid, 0) + 1
+                    self.gen_restarted = getattr(self, 'gen_restarted', {}); n_ = self.gen_restarted.get(jid, 0)
+                    self.gen_crs = getattr(self, 'gen_crs', set())
+                    if J.get('auto_rs') and not J.get('restart') and n_ >= 1 and jid not in self.gen_crs and self.cfg.get('comfy_restart_stall') is not False and self.comfy_exe():
+                        self.gen_crs.add(jid); self.comfy_restart(f'#{jid} 清記憶體後又卡住')   # V0.3.72 第二次卡住：先重開 ComfyUI（多半是它的視窗卡住，例如跳出更新）再試，不算次數
+                    else: self.gen_restarted[jid] = n_ + 1
                     J['requeue'] = True; J.pop('restart', None); raise InterruptedError
                 if time.time() > dead: C.cancel(pid); raise comfy.ComfyError(f'超過 {self.cfg.get("gen_timeout_min")} 分鐘還沒好，先停掉')
                 m = None

@@ -285,6 +285,23 @@ def t_gen():
     assert E.db.one('SELECT state FROM gen_jobs WHERE id=?', (nx,))[0] == 'done', '跳過之後下一張沒有接著做'
     E.cfg.set('gen_stall_min', 8); E.cfg.set('gen_stall_auto_min', 20); E.cfg.set('gen_lost_check_sec', 15)
     E.cfg.set('comfy_exe', '/nonexistent/ComfyUI.exe'); assert not E.comfy_launch('測試')['ok']   # V0.3.62 找不到程式：不會亂開
+    assert not E.comfy_restart('測試')['ok']                                     # V0.3.72 找不到程式：不關掉（不然關了打不開）
+    fx = tempfile.NamedTemporaryFile(suffix='.exe', delete=False); fx.close(); E.cfg.set('comfy_exe', fx.name); L_ = []
+    E.comfy_launch = lambda why='': (L_.append(why), {'ok': True})[1]
+    assert E.comfy_restart('測試')['ok'] and not E.comfy_restart('測試2')['ok']   # 重開中再按：不會重複
+    for _ in range(100):
+        if L_ and not E._comfy_rs_busy: break
+        time.sleep(0.1)
+    assert L_ == ['測試：重開'], L_
+    E.comfy_status(force=True); E.cfg.set('comfy_restart_h', 24); L_.clear()
+    E._comfy_rs_t = 0; E.comfy_st['up_t'] = time.time() - 3600; E._gen_idle_t = time.time() - 3600; E._comfy_daily(); time.sleep(0.3); assert not L_   # 才開 1 小時：不動
+    E.comfy_st['up_t'] = time.time() - 25 * 3600; E._gen_idle_t = time.time() - 60; E._comfy_daily(); time.sleep(0.3); assert not L_   # 剛做完：不動
+    E._gen_idle_t = time.time() - 3600; E._comfy_daily()
+    for _ in range(100):
+        if L_ and not E._comfy_rs_busy: break
+        time.sleep(0.1)
+    assert L_ and '每 24 小時' in L_[0], L_                                      # 開了 25 小時又閒著：趁空檔重開
+    del E.comfy_launch; E.cfg.set('comfy_exe', ''); os.unlink(fx.name); E.comfy_status(force=True)
     print('    ✔ ComfyUI 弄丟工作 → 重新送出；卡住 → 提醒、自動中斷清記憶體重排')
     i2 = E.gen_save_input(F.png(9, 9), 't2')
     try: E.gen_add('兩張圖合併', 'x', img); raise AssertionError('只給一張也收了')

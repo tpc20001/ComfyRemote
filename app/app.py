@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.71'
+APP_VERSION = '0.3.72'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -225,7 +225,8 @@ class GenPage(QWidget):
         b_tpl.setToolTip('拿 ComfyUI 內建的官方範本做流程（例如 MiniMax H3 文字生影片）'); b_tpl.clicked.connect(self.import_tpl)
         b_cmp = QPushButton('🧪 比較模型'); b_cmp.setToolTip('同一批照片讓好幾種模型各改一次，排一整晚比速度和畫質（在瀏覽器開大螢幕版）'); b_cmp.clicked.connect(self.open_cmp)
         b_lc = QPushButton('🚀 開 ComfyUI'); b_lc.setToolTip('打開 Comfy Desktop（找不到程式時會問你在哪；手機的提醒條也能按）'); b_lc.clicked.connect(self.launch_comfy)   # V0.3.63
-        for b_ in (b_re, b_lc, b_out, b_wfd, b_imp, b_tpl, b_ppl, b_cmp): r0.addWidget(b_)
+        b_rs = QPushButton('🔄 重開 ComfyUI'); b_rs.setToolTip('ComfyUI 卡住（例如跳出更新視窗）：關掉再打開，正在做的會放回排隊、好了自動接著做；只重開不更新'); b_rs.clicked.connect(self.restart_comfy)   # V0.3.72
+        for b_ in (b_re, b_lc, b_rs, b_out, b_wfd, b_imp, b_tpl, b_ppl, b_cmp): r0.addWidget(b_)
         self.url.editingFinished.connect(lambda: (ENG.cfg.set('comfy_url', self.url.text().strip()), self.status(True)))
         b_re.clicked.connect(lambda: self.status(True)); b_imp.clicked.connect(self.import_wf)
         b_out.clicked.connect(lambda: QDesktopServices.openUrl(QUrl.fromLocalFile(str(ENG.data / 'outputs'))))
@@ -507,6 +508,14 @@ class GenPage(QWidget):
             if not p: return
             ENG.cfg.set('comfy_exe', p)
         r = ENG.comfy_launch('電腦版按的'); QMessageBox.information(self, 'ComfyUI', r.get('message', ''))
+
+    def restart_comfy(self):
+        if not ENG.comfy_exe():
+            p, _ = QFileDialog.getOpenFileName(self, 'ComfyUI 的程式在哪？（ComfyUI.exe 或 run_nvidia_gpu.bat）', os.environ.get('LOCALAPPDATA', ''), 'ComfyUI (*.exe *.bat)')
+            if not p: return
+            ENG.cfg.set('comfy_exe', p)
+        if QMessageBox.question(self, 'ComfyUI', '重開 ComfyUI？\n先關掉、再打開（大約 1～2 分鐘）。正在做的會放回排隊，好了自動接著做。只重開，不更新。') != QMessageBox.Yes: return
+        r = ENG.comfy_restart('電腦版按的'); self.win.msg(r.get('message', ''))
 
     def import_tpl(self):
         L = [f'{t}　（{n}）' for t, n in ENG.TEMPLATES]

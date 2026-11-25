@@ -346,7 +346,7 @@ class WebServer:
         return jresp({'ok': True, 'ctl': E.bg_view()})
 
     SETTABLE = {'ui_theme': str, 'cpu_guard': bool, 'cpu_max': int, 'bg_ramp_sec': int, 'demo_n': int, 'close_to_tray': bool, 'auto_restart': bool,
-                'comfy_url': str, 'gen_mp': float, 'gen_timeout_min': int, 'keep_awake': bool, 'hf_token': str, 'gen_free_idle': bool, 'gen_auto_retry': bool}   # 手機可以改的設定（新功能的設定加在這裡）
+                'comfy_url': str, 'gen_mp': float, 'gen_timeout_min': int, 'keep_awake': bool, 'hf_token': str, 'gen_free_idle': bool, 'gen_auto_retry': bool, 'comfy_restart_h': int, 'comfy_restart_stall': bool, 'comfy_exe': str}   # 手機可以改的設定（新功能的設定加在這裡）
 
     def api_settings(self, req):
         E = self.E()
@@ -473,7 +473,7 @@ class WebServer:
     def api_gen(self, req):
         """狀態：ComfyUI 連線、工作清單；full=1 再加流程清單和設定."""
         E = self.E(); out = {'ok': True, 'comfy': E.comfy_status(), 'jobs': E.gen_jobs(int(req.q('n', '20') or 20)), 'info': E.info(), 'paused': E.bg_hold('gen'),
-                             'now': time.time(), 'wait': getattr(E, 'gen_wait', ''), 'wait_t': getattr(E, 'gen_wait_t', 0), 'cexe': bool(E.comfy_exe()), 'cauto': bool(E.cfg.get('comfy_autostart')), 'qsum': E.gen_qsum()}
+                             'now': time.time(), 'wait': getattr(E, 'gen_wait', ''), 'wait_t': getattr(E, 'gen_wait_t', 0), 'cexe': bool(E.comfy_exe()), 'cauto': bool(E.cfg.get('comfy_autostart')), 'crh': E.cfg.get('comfy_restart_h'), 'crs': bool(getattr(E, '_comfy_rs_busy', False)), 'qsum': E.gen_qsum()}
         if req.q('full'): out.update(wfs=E.gen_workflows(), wf=E.cfg.get('gen_wf'), mp=E.cfg.get('gen_mp'), spd={k: round(v[0]) for k, v in E._wf_speed().items()}, stars={r[0]: [round(r[1], 1), r[2]] for r in E.db.q('SELECT wf, AVG(vote), COUNT(*) FROM gen_jobs WHERE vote>0 AND deleted=0 GROUP BY wf')}, lineup={n: {'steps': st, 'lic': lic, 'note': note} for n, _t, st, lic, note in E.LINEUP})
         return jresp(out)
 
@@ -573,6 +573,8 @@ class WebServer:
                 if J: J['restart'] = True
                 r = {'ok': bool(J), 'message': '中斷、清記憶體後重新排（幾秒）' if J else '這個沒有在跑'}
             elif a == 'launch': r = E.comfy_launch('手機按的')                       # V0.3.62
+            elif a == 'crestart': r = E.comfy_restart('手機按的')                    # V0.3.72 🔄 重開 ComfyUI
+            elif a == 'crdaily': E.cfg.set('comfy_restart_h', max(0, min(168, int(d.get('h') or 0)))); r = {'ok': True, 'message': ('每 %d 小時趁空檔重開 ComfyUI' % int(d.get('h') or 0)) if d.get('h') else '不自動重開 ComfyUI'}
             elif a == 'autostart': E.cfg.set('comfy_autostart', bool(d.get('on'))); r = {'ok': True, 'message': '連不到 ComfyUI 3 分鐘就自動打開：' + ('開' if d.get('on') else '關')}
             elif a == 'recheck':                                               # V0.3.45 連不到 ComfyUI：馬上再找一次
                 st = E.comfy_status(force=True); r = {'ok': st['ok'], 'message': ('✔ 連上 ComfyUI 了，繼續做' if st['ok'] else '還是連不到：' + (st.get('err') or ''))}
