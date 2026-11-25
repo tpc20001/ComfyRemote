@@ -28,48 +28,62 @@ def bind(**kw):
 
 
 def state():
-    """V0.3.43 只在「真的有在做」時才跟別人要效能（不要讓另外兩個為了一個卡住的 ComfyUI 一直跑 5%）：
-    - 連不到 ComfyUI（排隊在等它開）→ want 1：不跟別人要
-    - 生圖暫停 → want 0
-    - 有工作、ComfyUI 有在動 → want 2（最優先）
-    - 卡住（8 分鐘沒進度）→ 先請別人放掉顯示卡 10 分鐘（規則第 4 版 starved）；還是沒動 → want 1，別人照常全速（20 分鐘會自動中斷重來）"""
+    """跟另外兩個程式說「我現在要多少效能」，每 2 秒一次。V0.3.71 只看記憶體裡的資料，不連 ComfyUI（以前這裡會連線，ComfyUI 忙的時候卡 10 幾秒，別人就以為這邊不在）.
+    - 沒工作 → want 0；生圖暫停 → want 0
+    - 有工作（做中或排隊）→ want 2，最優先：這邊 80%，其他各 5%
+    - 連不到 ComfyUI 超過 1 分鐘 → want 1（不跟別人要）
+    - 卡住 8 分鐘：先請別人放掉顯示卡；再 10 分鐘還是沒動 → want 1（20 分鐘會自動中斷重來，有進度就馬上恢復 want 2）"""
+    s = _state(); E = _S['ctx'].get('eng')
+    k = (s['want'], s['what'][:12])
+    if _S.get('last') != k:
+        _S['last'] = k
+        try: E.log.w(f"🤝 握手：要 {('不用', '一點', '最優先', '全部')[s['want']]}（want {s['want']}）{('：' + s['what']) if s['what'] else ''}")
+        except Exception: pass
+    return s
+
+
+def _state():
     E = _S['ctx'].get('eng'); a = q = 0
     try: A = list(E.gen_active.values()); a = len(A); q = len(E.gen_q)
     except Exception: A = []
-    P3 = HS.policy3(); base = {'on': True, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'use': _mem(E), 'max': {}, 'need': {}}
+    st = _st(E); P3 = HS.policy3(); base = {'on': True, 'prio': 5, 'lv': P3['lv'].get(APP, 10), 'use': _mem(st), 'max': {}, 'need': {}}
     if not (a or q): return {**base, 'want': 0, 'what': ''}
     try:
         if E.bg_hold('gen'): return {**base, 'want': 0, 'what': f'生圖暫停中（排隊 {q} 張）'}
     except Exception: pass
-    if getattr(E, 'gen_wait', '') and not a: return {**base, 'want': 1, 'what': f'等 ComfyUI（連不到）：排隊 {q} 張，先不跟別人要效能'}
-    now = time.time(); stall = [J for J in A if J.get('stall')]
-    what = f'生圖：正在做 {a} 張' + (f'、排隊 {q} 張' if q else '')
+    now = time.time()
+    if getattr(E, 'gen_wait', '') and not a and now - getattr(E, 'gen_wait_t', now) > 60:
+        return {**base, 'want': 1, 'what': f'等 ComfyUI（連不到）：排隊 {q} 張，先不跟別人要效能'}
+    what = f'生圖：正在做 {a} 張' + (f'、排隊 {q} 張' if q else '') if a else f'生圖：排隊 {q} 張，馬上開始'
+    stall = [J for J in A if J.get('stall')]
     if stall:
-        age = (now - min(J['stall'] for J in stall)) / 60
-        if age >= 10:
-            return {**base, 'want': 1, 'what': f'ComfyUI 卡住沒進度（已請別人讓顯示卡 10 分鐘還是沒動）：先不跟別人要效能，會自動中斷重來'}
-        return {**base, 'want': 2, 'what': what + '（卡住：請別人先讓顯示卡）', 'need': {'starved': True, 'why': 'ComfyUI 卡住沒進度', 'vram_free_gb': _vram(E)}}
-    vf = _vram(E)
+        if (now - min(J['stall'] for J in stall)) / 60 >= 10:
+            return {**base, 'want': 1, 'what': 'ComfyUI 卡住沒進度（已請別人讓顯示卡 10 分鐘還是沒動）：先不跟別人要效能，會自動中斷重來'}
+        return {**base, 'want': 2, 'what': what + '（卡住：請別人先讓顯示卡）', 'need': {'starved': True, 'why': 'ComfyUI 卡住沒進度', 'vram_free_gb': _vram(st)}}
+    vf = _vram(st)
     if a and vf is not None and vf < 1.0:
         return {**base, 'want': 2, 'what': what, 'need': {'starved': True, 'vram_free_gb': vf, 'why': f'顯示卡記憶體只剩 {vf:.1f} GB'}}
     return {**base, 'want': 2, 'what': what}
 
 
-def _mem(E):
+def _st(E):
+    try: return E.comfy_status(cached=True) or {}
+    except Exception: return {}
+
+
+def _mem(st):
     """ComfyUI 回報的顯示卡記憶體、RAM（給 Lv 畫面看是誰佔住）."""
     try:
-        st = E.comfy_status() or {}; v = st.get('vram') or [None, None]; r = st.get('ram') or [None, None]; G = 2**30; out = {}
+        v = st.get('vram') or [None, None]; r = st.get('ram') or [None, None]; G = 2**30; out = {}
         if v[1]: out.update(vram_free_gb=round((v[0] or 0) / G, 1), vram_total_gb=round(v[1] / G, 1))
         if r[1]: out.update(ram_free_gb=round((r[0] or 0) / G, 1), ram_total_gb=round(r[1] / G, 1))
         return out
     except Exception: return {}
 
 
-def _vram(E):
-    try:
-        v = (E.comfy_status() or {}).get('vram') or [None, None]
-        return round(v[0] / 2**30, 2) if v[0] is not None else None
-    except Exception: return None
+def _vram(st):
+    v = st.get('vram') or [None, None]
+    return round(v[0] / 2**30, 2) if v and v[0] is not None else None
 
 
 def stop(remove=True):

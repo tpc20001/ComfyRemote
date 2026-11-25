@@ -1287,7 +1287,7 @@ function ovOpen(im,keep){OVCUR=im;$('#ovi').classList.remove('ovz');$('#cmp').cl
     cmpShow((!!old&&LS.get('cmp',true))||AB,keep);ovStars(J);
     const o=$('#ovo'),OT=J&&J.state==='done'&&!J.cmp?gOther(J.wf):null;o.style.display=OT?'':'none';
     if(OT){o.textContent=OT[1]+' 換 '+(/GROK|INT8/.test(OT[0])?'GROK':'Qwen')+' 做';o.onclick=()=>gOtherGo(J.id,OT[0])}
-    const u=$('#ovu');u.style.display='none';   // V0.1.78 放大功能收起來（只留兩個改圖流程）u.onclick=async()=>{const x=await api('/api/gen_act',{a:'upscale',id:+im.dataset.id,idx:+im.dataset.i||0});toast(x.ok?x.message:(x.message||'失敗'),4000)};
+    $('#ovu').style.display='none';
     r.onclick=async()=>{const x=await api('/api/gen_act',{a:'reuse',id:+im.dataset.id,idx:+im.dataset.i});if(x.ok){if(GIMGS[0])LS.set('gimg_prev',GIMGS[0]);gOne(x.img);$('#ov').style.display='none';
       if(x.mask)try{const b=await (await fetch(IMGU('inputs/'+x.mask))).blob();b._srv=x.mask;GMASK.set(x.img,b);setTimeout(()=>toast('🖌 帶著同一個局部範圍：可以直接改，或點「🖌 局部 ✔」調整／取消',4000),1600)}catch(e){}
       if(CUR!=='gen'){CUR='gen';LS.set('tab','gen');tabs();show()}else gPrev();scrollTo(0,0);toast('✔ 換成這張了，打新的提示詞再按開始')}else toast(x.message||'失敗')};

@@ -68,7 +68,6 @@ DEFAULTS = {
 def now_s(): return time.strftime('%Y-%m-%d %H:%M:%S')
 
 
-def path_key(p): return os.path.normcase(os.path.normpath(str(p))).rstrip('\\/').lower()
 
 
 def fmt_t(s):
@@ -795,12 +794,6 @@ class Engine:
                 if o.get('links'): o['links'] = [x for x in o['links'] if x in keep]
         return wf
 
-    @classmethod
-    def _ui_drop_unused_loads(cls, wf):
-        """沒接到任何地方的「讀照片」拿掉（不然 App 會以為要兩張照片）."""
-        used = {l[1] for l in wf.get('links') or []}
-        return cls._ui_drop(wf, [n['id'] for n in wf.get('nodes') or [] if n.get('type') == 'LoadImage' and n['id'] not in used])
-
     PE_NODES = {'TextGenerate', 'TextGenerateV2', 'PreviewAny'}                 # 「提示詞自動改寫」用的（多跑一個大語言模型，慢）
     SHOW_NODES = {'ImageCompare', 'PreviewAny', 'PreviewImage', 'MarkdownNote', 'Note'}  # 只是給人看的
 
@@ -1096,13 +1089,25 @@ class Engine:
             except Exception: pass
 
     # ---- ComfyUI 連線
-    def comfy_status(self, force=False):
-        """{'ok','url','ver','gpu','vram','err'}（5 秒內不重查）."""
+    def comfy_status(self, force=False, cached=False):
+        """{'ok','url','ver','gpu','vram','err'}（5 秒內不重查）。cached＝True：只看上次的結果，不連線（握手用，不能卡住）.
+        V0.3.71 連過的網址先用比較長的等待（ComfyUI 正在載模型時會慢），連續 2 次、超過 20 秒都沒回才算「連不到」."""
         S = self.comfy_st
-        if force or time.time() - S['t'] > 5:
-            url, st = comfy.find_url(self.cfg.get('comfy_url') or S.get('url') or '')
-            S.update(t=time.time(), url=url, stats=st if url else None, err='' if url else str(st))
-            if url and url != S.get('logged'): S['logged'] = url; self.log.w(f'生圖：連上 ComfyUI {url}')
+        if not cached and (force or time.time() - S['t'] > 5):
+            known = S.get('url') or ''; url, st = '', ''; cu = str(self.cfg.get('comfy_url') or '')
+            if cu != S.get('cfgu', cu): known = ''                          # 設定改了網址：重新找
+            S['cfgu'] = cu
+            if known:
+                try: url, st = known, comfy.Comfy(known).get_json('/system_stats', timeout=8)
+                except Exception as ex: url, st = '', str(ex)
+            if not url and (not known or force or S.get('bad', 0) >= 1):
+                url, st = comfy.find_url(self.cfg.get('comfy_url') or known)
+            if url: S.update(url=url, stats=st, err='', bad=0, ok_t=time.time())
+            else:
+                S['bad'] = S.get('bad', 0) + 1
+                if not known or S['bad'] >= 2 and time.time() - S.get('ok_t', 0) > 20: S.update(url='', stats=None, err=str(st))
+            S['t'] = time.time()
+            if S['url'] and S['url'] != S.get('logged'): S['logged'] = S['url']; self.log.w(f'生圖：連上 ComfyUI {S["url"]}')
         st = S.get('stats') or {}; sysi = st.get('system') or {}; dev = (st.get('devices') or [{}])[0] if st.get('devices') else {}
         return {'ok': bool(S['url']), 'url': S['url'], 'err': S['err'], 'ver': sysi.get('comfyui_version', ''), 'gpu': dev.get('name', ''),
                 'vram': [dev.get('vram_free'), dev.get('vram_total')] if dev else None, 'ram': [sysi.get('ram_free'), sysi.get('ram_total')] if sysi.get('ram_total') else None}
@@ -1849,9 +1854,6 @@ class Engine:
         except Exception: pass
         return self.gen_add(wf, '', img, src=src), msg
 
-    def gen_upscale(self, jid, idx=0, src='電腦'):
-        return self.gen_post(jid, idx, 'upscale', src)[0]
-
     def cmp_stop(self, rid):
         """這次比較還沒跑的全部取消（做好的留著）."""
         n = 0
@@ -2357,6 +2359,7 @@ class Engine:
     def _gen_boss(self):
         while self.alive():
             try:
+                if self.gen_active: self.comfy_status()                       # V0.3.71 做的時候也更新顯示卡記憶體（握手只看這份，不自己連線）
                 if self.gen_q or self.gen_active: self._gen_busy_t = time.time()
                 elif getattr(self, '_gen_busy_t', 0) and time.time() - self._gen_busy_t > 60 and self.cfg.get('gen_free_idle') is not False:   # 全部做完 1 分鐘：叫 ComfyUI 把模型清出記憶體（整晚跑完，電腦不用一直佔著 12GB＋幾十 GB 記憶體）
                     self._gen_busy_t = 0
@@ -2764,7 +2767,7 @@ class Engine:
             elif self.stop_all: self.done(t, 'stop', '關程式，下次接著做')
             else: self.db.x("UPDATE gen_jobs SET state='stop', msg='已取消', t1=? WHERE id=?", (time.time(), jid)); self.done(t, 'stop', '已取消')
         except comfy.ComfyDown as ex:                                       # ComfyUI 關掉了：放回排隊最前面，等它回來
-            self.comfy_st['t'] = 0; self.gen_hot = None
+            self.comfy_st.update(t=0, ok_t=0, bad=max(1, self.comfy_st.get('bad', 0))); self.gen_hot = None
             n = self.gen_crash.get(jid, 0) + (1 if J.get('submitted') else 0); self.gen_crash[jid] = n
             if n >= 2:                                                         # 同一個工作跑到一半 ComfyUI 不見 2 次：多半是這個工作把它弄當了（顯存／記憶體不夠），跳過它
                 msg = 'ComfyUI 跑這個工作時關掉／當掉了 2 次（多半是顯存或記憶體不夠：把寬高、每段幾格調小再試），先跳過，後面的繼續'
