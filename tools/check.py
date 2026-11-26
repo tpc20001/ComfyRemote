@@ -308,12 +308,17 @@ def t_gen():
     E._cexe = None; assert E.comfy_exe() == fe, E.comfy_exe()
     L_ = []; E.comfy_launch = lambda why='': (L_.append(('開', why)), {'ok': True})[1]; E.comfy_restart = lambda why='': (L_.append(('重開', why)), {'ok': True})[1]
     E.gen_wait_t = time.time() - 30; E._comfy_autofix(); assert not L_                       # 才 30 秒：先等
-    E.gen_wait_t = time.time() - 70; E._comfy_autofix(); assert L_ and L_[0][0] == '開', L_   # 1 分鐘、程式沒在跑 → 打開
+    E.gen_wait_t = time.time() - 100; E._comfy_autofix(); assert L_ and L_[0][0] == '開', L_   # 1 分半、程式沒在跑 → 打開
     E._comfy_autofix(); assert len(L_) == 1                                                   # 剛開：給它 5 分鐘
     E._fix_t -= 301; E._comfy_pids = lambda: [1234]; E._comfy_autofix(); assert L_[-1][0] == '重開', L_   # 5 分鐘還連不到、程式開著 → 重開
     E._fix_t -= 301; E._comfy_autofix(); assert len(L_) == 2; E._fix_t -= 300; E._comfy_autofix(); assert len(L_) == 3   # 之後每 10 分鐘
     E.cfg.set('comfy_autostart', False); E.gen_wait_t = time.time() - 999; E._comfy_autofix(); assert len(L_) == 3   # 關掉就不動
     for k in ('comfy_launch', 'comfy_restart', '_comfy_pids'): delattr(E, k)
+    R_ = []; E._comfy_run = lambda c: R_.append(c['cmd']); E._comfy_open = lambda x: R_.append('desktop')   # V0.3.74 學到指令 → 直接開 ComfyUI，不經過 Desktop 首頁
+    E.cfg.set('comfy_cmd', {'cmd': '"C:/v/python.exe" "C:/c/main.py" --port 8000', 'cwd': 'C:/c'}); E._comfy_launch_t = 0
+    assert E.comfy_launch('測試')['ok'] and R_ == ['"C:/v/python.exe" "C:/c/main.py" --port 8000'], R_
+    E.cfg.set('comfy_direct', False); E._comfy_launch_t = 0; E.comfy_launch('測試'); assert R_[-1] == 'desktop', R_
+    E.cfg.set('comfy_direct', True); E.cfg.set('comfy_cmd', {}); del E._comfy_run, E._comfy_open
     E.cfg.set('comfy_autostart', True); E._cexe = None; shutil.rmtree(td, ignore_errors=True)
     if la0 is None: os.environ.pop('LOCALAPPDATA', None)
     else: os.environ['LOCALAPPDATA'] = la0

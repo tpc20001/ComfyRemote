@@ -1,5 +1,12 @@
 [
  {
+  "version": "0.3.74",
+  "date": "2026-11-26",
+  "items": [
+   "新版 Comfy Desktop 會停在首頁：ComfyUI 開著時自動記下它的啟動指令，之後打開／重開都直接開 ComfyUI 本體，不用再點「打開 ComfyUI」；設定可以看、可以清掉重學"
+  ]
+ },
+ {
   "version": "0.3.73",
   "date": "2026-11-26",
   "items": [

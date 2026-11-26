@@ -45,6 +45,8 @@ DEFAULTS = {
     'lab': {},                                   # 🧪 實驗工作區的開關 {名稱: True/False}
     'demo_n': 2,                                 # 示範背景工作：同時幾個
     # 🎨 ComfyUI 生圖
+    'comfy_cmd': {},                             # V0.3.74 學到的 ComfyUI 啟動指令（自動記）
+    'comfy_direct': True,                        # V0.3.74 有學到就直接啟動，不經過 Comfy Desktop 首頁
     'comfy_restart_h': 24,                       # V0.3.72 每幾小時趁空檔重開 ComfyUI（0＝不要）
     'comfy_restart_stall': True,                 # V0.3.72 卡住第二次：先重開 ComfyUI 再試
     'comfy_url': '',                             # 空的＝自動找（Desktop 8000、免安裝版 8188）
@@ -1111,7 +1113,7 @@ class Engine:
                 S['bad'] = S.get('bad', 0) + 1
                 if not known or S['bad'] >= 2 and time.time() - S.get('ok_t', 0) > 20: S.update(url='', stats=None, err=str(st))
             S['t'] = time.time()
-            if S['url'] and S['url'] != S.get('logged'): S['logged'] = S['url']; self.log.w(f'生圖：連上 ComfyUI {S["url"]}')
+            if S['url'] and S['url'] != S.get('logged'): S['logged'] = S['url']; self.log.w(f'生圖：連上 ComfyUI {S["url"]}'); threading.Thread(target=self._comfy_learn, name='ComfyLearn', daemon=True).start()
         st = S.get('stats') or {}; sysi = st.get('system') or {}; dev = (st.get('devices') or [{}])[0] if st.get('devices') else {}
         return {'ok': bool(S['url']), 'url': S['url'], 'err': S['err'], 'ver': sysi.get('comfyui_version', ''), 'gpu': dev.get('name', ''),
                 'vram': [dev.get('vram_free'), dev.get('vram_total')] if dev else None, 'ram': [sysi.get('ram_free'), sysi.get('ram_total')] if sysi.get('ram_total') else None}
@@ -2030,24 +2032,72 @@ class Engine:
             subprocess.Popen(['cmd', '/c', 'start', '', exe], cwd=os.path.dirname(exe), creationflags=0x08000000); return
         subprocess.Popen([exe], cwd=os.path.dirname(exe), close_fds=True)
 
+    def comfy_can(self): return bool(self.comfy_exe() or self._comfy_cmd())
+
+    def _comfy_cmd(self):
+        """V0.3.74 學到的 ComfyUI 啟動指令（{'cmd','cwd'}）：有就直接開 ComfyUI 本體，不經過 Comfy Desktop 首頁."""
+        c = self.cfg.get('comfy_cmd') or {}
+        if self.cfg.get('comfy_direct') is False or not isinstance(c, dict) or 'main.py' not in str(c.get('cmd', '')): return None
+        return c
+
+    def _ps_proc(self, pid):
+        out = subprocess.run(['powershell', '-NoProfile', '-Command', f"Get-CimInstance Win32_Process -Filter 'ProcessId={int(pid)}' | Select-Object ProcessId,ParentProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Compress"],
+                             capture_output=True, text=True, timeout=30, creationflags=0x08000000).stdout.strip()
+        return json.loads(out) if out.startswith('{') else {}
+
+    def _comfy_learn(self):
+        """V0.3.74 ComfyUI 開著時，記下它是怎麼啟動的（佔著連接埠的 python 的完整指令；venv 的話用外層那個），下次直接用這個指令開，不用再點「打開 ComfyUI」."""
+        if os.name != 'nt': return
+        try:
+            port = urllib.parse.urlsplit(self.comfy_st.get('url') or '').port
+            if not port: return
+            out = subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, timeout=15, creationflags=0x08000000).stdout
+            pid = next((int(f[4]) for f in (l.split() for l in out.splitlines()) if len(f) >= 5 and f[3].upper() == 'LISTENING' and f[1].rsplit(':', 1)[-1] == str(port) and f[4].isdigit()), 0)
+            if not pid: return
+            P = self._ps_proc(pid); cl = str(P.get('CommandLine') or '')
+            if 'main.py' not in cl: return
+            par = self._ps_proc(P.get('ParentProcessId') or 0) if P.get('ParentProcessId') else {}
+            pcl = str(par.get('CommandLine') or '')
+            if 'main.py' in pcl and 'python' in str(par.get('ExecutablePath') or '').lower(): cl = pcl   # venv 的 python.exe 會再開一個真正的 python：用外層的（才有套件）
+            m = re.search(r'"([^"]*main\.py)"', cl) or re.search(r'(\S*main\.py)', cl); cwd = os.path.dirname(m.group(1)) if m and os.path.isabs(m.group(1)) else ''
+            new = {'cmd': cl, 'cwd': cwd, 't': int(time.time())}
+            old = self.cfg.get('comfy_cmd') or {}
+            if not isinstance(old, dict) or old.get('cmd') != cl:
+                self.cfg.set('comfy_cmd', new); self.log.w(f'生圖：學到 ComfyUI 的啟動指令（下次自己直接開，不用點「打開 ComfyUI」）：{cl[:200]}')
+        except Exception as ex: self.log.w(f'生圖：記 ComfyUI 啟動指令失敗（不影響）：{ex}')
+
+    def _comfy_run(self, c):
+        """用學到的指令直接啟動 ComfyUI（開一個縮小的黑視窗，看得到它的訊息；關掉那個視窗就是關 ComfyUI）."""
+        si = None
+        if os.name == 'nt':
+            si = subprocess.STARTUPINFO(); si.dwFlags |= 1; si.wShowWindow = 7                    # SW_SHOWMINNOACTIVE
+        subprocess.Popen(c['cmd'], cwd=c.get('cwd') or None, startupinfo=si, close_fds=True, creationflags=(0x00000010 | 0x00000200) if os.name == 'nt' else 0, shell=os.name != 'nt')
+
     def comfy_launch(self, why='手機'):
         """打開 ComfyUI。5 分鐘內開過就不再開（它可能正在啟動）."""
-        exe = self.comfy_exe()
-        if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式：到「設定 → ComfyUI → ComfyUI 程式位置」填 Comfy Desktop.exe（或免安裝版的 run_nvidia_gpu.bat）的完整路徑'}
+        exe = self.comfy_exe(); cmd = self._comfy_cmd()
+        if not exe and not cmd: return {'ok': False, 'message': '找不到 ComfyUI 的程式：到「設定 → ComfyUI → ComfyUI 程式位置」填 Comfy Desktop.exe（或免安裝版的 run_nvidia_gpu.bat）的完整路徑'}
         if time.time() - getattr(self, '_comfy_launch_t', 0) < 300: return {'ok': False, 'message': '5 分鐘內已經叫它開過了，ComfyUI 可能還在啟動，等一下'}
+        if cmd:
+            try:
+                self._comfy_launch_t = time.time(); self._comfy_run(cmd)
+                self.log.w(f'生圖：直接啟動 ComfyUI（{why}）：{cmd["cmd"][:200]}')
+                return {'ok': True, 'message': '🚀 直接啟動 ComfyUI 了（不用再點「打開 ComfyUI」；大約 1～2 分鐘，好了會自動接著做）'}
+            except Exception as ex: self.log.w(f'生圖：直接啟動失敗（{ex}），改開 Comfy Desktop')
+            if not exe: return {'ok': False, 'message': '直接啟動 ComfyUI 失敗，也找不到 Comfy Desktop'}
         try:
             self._comfy_launch_t = time.time(); self._comfy_open(exe)
-            self.log.w(f'生圖：打開 ComfyUI（{why}）：{exe}')
-            return {'ok': True, 'message': '🚀 叫 ComfyUI 打開了（啟動大約 1～2 分鐘，好了會自動接著做）'}
+            self.log.w(f'生圖：打開 ComfyUI（{why}）：{exe}' + ('' if cmd else '（還沒學到直接啟動的指令：新版 Comfy Desktop 可能要再點一次「打開 ComfyUI」；ComfyUI 開著時這邊會自動學）'))
+            return {'ok': True, 'message': '🚀 叫 ComfyUI 打開了（啟動大約 1～2 分鐘，好了會自動接著做）' + ('' if cmd else '。如果停在 Comfy 首頁，請點右上角「打開 ComfyUI」一次，之後這邊就會自己直接啟動')}
         except Exception as ex: return {'ok': False, 'message': f'打不開 ComfyUI：{ex}'}
 
     def _comfy_autofix(self):
         """V0.3.73 連不到 ComfyUI 不空等：等 1 分鐘 → 程式沒在跑就打開、還開著（卡住）就重開；
         之後給它 5 分鐘啟動，還連不到再試一次，再來每 10 分鐘試一次."""
-        if self.cfg.get('comfy_autostart') is False or not self.comfy_exe() or getattr(self, '_comfy_rs_busy', False): return
+        if self.cfg.get('comfy_autostart') is False or not self.comfy_can() or getattr(self, '_comfy_rs_busy', False): return
         now = time.time(); w0 = getattr(self, 'gen_wait_t', now)
         if getattr(self, '_fix_w', None) != w0: self._fix_w, self._fix_n, self._fix_t = w0, 0, 0
-        if now - w0 < 60 or (self._fix_n and now - self._fix_t < (300 if self._fix_n == 1 else 600)): return
+        if now - w0 < 90 or (self._fix_n and now - self._fix_t < (300 if self._fix_n == 1 else 600)): return
         self._fix_n += 1; self._fix_t = now; m = max(1, round((now - w0) / 60))
         if self._comfy_pids(): self.comfy_restart(f'連不到 {m} 分鐘、程式還開著（多半卡住）')
         else: self._comfy_launch_t = 0; self.comfy_launch(f'連不到 {m} 分鐘，自動打開')
@@ -2079,7 +2129,7 @@ class Engine:
         """V0.3.72 🔄 重開 ComfyUI：關掉（連子程式一起）→ 等它真的關了 → 再打開。正在做的工作會自動放回排隊，ComfyUI 好了接著做.
         只重開，不更新（要更新等你在電腦前自己決定）。"""
         if getattr(self, '_comfy_rs_busy', False): return {'ok': False, 'message': '正在重開 ComfyUI 了，等一下'}
-        exe = self.comfy_exe()
+        exe = self.comfy_can()
         if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式：先到「設定 → 生圖」填 ComfyUI 的位置（Comfy Desktop 的 ComfyUI.exe，或免安裝版的 run_nvidia_gpu.bat），重開後才打得開'}
         self._comfy_rs_busy = True
         def go():
@@ -2102,7 +2152,7 @@ class Engine:
     def _comfy_daily(self):
         """V0.3.72 每 comfy_restart_h 小時（預設 24）趁空檔重開一次 ComfyUI：這邊沒排隊、沒在做、閒了 10 分鐘以上才動."""
         h = float(self.cfg.get('comfy_restart_h') or 0)
-        if h <= 0 or self.gen_q or self.gen_active or not self.comfy_exe(): return
+        if h <= 0 or self.gen_q or self.gen_active or not self.comfy_can(): return
         S = self.comfy_st; now = time.time()
         if not S.get('url'): return
         up = S.setdefault('up_t', now)
@@ -2527,7 +2577,7 @@ class Engine:
                     except Exception: pass
                     self.gen_restarted = getattr(self, 'gen_restarted', {}); n_ = self.gen_restarted.get(jid, 0)
                     self.gen_crs = getattr(self, 'gen_crs', set())
-                    if J.get('auto_rs') and not J.get('restart') and n_ >= 1 and jid not in self.gen_crs and self.cfg.get('comfy_restart_stall') is not False and self.comfy_exe():
+                    if J.get('auto_rs') and not J.get('restart') and n_ >= 1 and jid not in self.gen_crs and self.cfg.get('comfy_restart_stall') is not False and self.comfy_can():
                         self.gen_crs.add(jid); self.comfy_restart(f'#{jid} 清記憶體後又卡住')   # V0.3.72 第二次卡住：先重開 ComfyUI（多半是它的視窗卡住，例如跳出更新）再試，不算次數
                     else: self.gen_restarted[jid] = n_ + 1
                     J['requeue'] = True; J.pop('restart', None); raise InterruptedError
