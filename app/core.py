@@ -51,7 +51,7 @@ DEFAULTS = {
     'gen_wf': 'GROK 改圖',                        # 預設用哪個流程（Data\workflows\<名稱>.json）
     'gen_timeout_min': 60,                       # 一張超過幾分鐘算失敗
     'comfy_exe': '',                             # V0.3.62 Comfy Desktop 的程式（空的＝找預設位置）
-    'comfy_autostart': False,                    # V0.3.62 連不到 3 分鐘自動打開 ComfyUI
+    'comfy_autostart': True,                     # V0.3.73 連不到 1 分鐘自動打開（沒在跑）或重開（卡住）ComfyUI
     'gen_stall_min': 8,                          # V0.3.42 跑到一半幾分鐘沒有任何進度 → 提醒（多半是記憶體不夠，ComfyUI 卡住）
     'gen_stall_auto_min': 20,                    # 卡住幾分鐘自動「中斷＋清記憶體＋重排」一次（0＝不要自動）
     'gen_mp': 2.0,                               # 手機上傳前縮成幾百萬像素（0＝原圖）
@@ -2003,26 +2003,54 @@ class Engine:
         return False
 
     def comfy_exe(self):
-        """V0.3.62 Comfy Desktop 的程式在哪（設定 comfy_exe；沒設就找預設安裝位置）."""
+        """ComfyUI 的程式在哪（設定 comfy_exe；沒設就找常見安裝位置）.
+        V0.3.73 加「Comfy Desktop\\Comfy Desktop.exe」（新版 Comfy Desktop 的名字），再找 Programs 底下名字有 comfy 的資料夾."""
         c = str(self.cfg.get('comfy_exe') or '').strip().strip('"')
-        L = [c] if c else []
-        la = os.environ.get('LOCALAPPDATA', '')
-        if la: L += [os.path.join(la, 'Programs', '@comfyorgcomfyui-electron', 'ComfyUI.exe'), os.path.join(la, 'Programs', 'ComfyUI', 'ComfyUI.exe')]
+        if c and os.path.isfile(c): return c
+        if getattr(self, '_cexe', None) and os.path.isfile(self._cexe): return self._cexe
+        la = os.environ.get('LOCALAPPDATA', ''); L = []
+        if la:
+            pg = os.path.join(la, 'Programs')
+            L += [os.path.join(pg, 'Comfy Desktop', 'Comfy Desktop.exe'), os.path.join(pg, '@comfyorgcomfyui-electron', 'ComfyUI.exe'), os.path.join(pg, 'ComfyUI', 'ComfyUI.exe')]
+            try:
+                for d in sorted(os.listdir(pg)):
+                    if 'comfy' not in d.lower(): continue
+                    for f in sorted(os.listdir(os.path.join(pg, d))):
+                        if f.lower().endswith('.exe') and 'comfy' in f.lower() and 'uninst' not in f.lower(): L.append(os.path.join(pg, d, f))
+            except Exception: pass
         for x in L:
-            if x and os.path.isfile(x): return x
+            if os.path.isfile(x): self._cexe = x; return x
         return ''
 
+    def _comfy_open(self, exe):
+        """像在桌面上點兩下那樣打開（Windows 用 os.startfile；.bat 也可以），不行再用 cmd start."""
+        if os.name == 'nt':
+            try: os.startfile(exe); return
+            except Exception as ex: self.log.w(f'生圖：直接打開失敗（{ex}），改用 cmd start')
+            subprocess.Popen(['cmd', '/c', 'start', '', exe], cwd=os.path.dirname(exe), creationflags=0x08000000); return
+        subprocess.Popen([exe], cwd=os.path.dirname(exe), close_fds=True)
+
     def comfy_launch(self, why='手機'):
-        """打開 ComfyUI（Comfy Desktop）。10 分鐘內開過就不再開（它可能正在啟動）."""
+        """打開 ComfyUI。5 分鐘內開過就不再開（它可能正在啟動）."""
         exe = self.comfy_exe()
-        if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式（Comfy Desktop 預設安裝位置沒有）'}
-        if time.time() - getattr(self, '_comfy_launch_t', 0) < 600: return {'ok': False, 'message': '10 分鐘內已經叫它開過了，ComfyUI 可能還在啟動，等一下'}
+        if not exe: return {'ok': False, 'message': '找不到 ComfyUI 的程式：到「設定 → ComfyUI → ComfyUI 程式位置」填 Comfy Desktop.exe（或免安裝版的 run_nvidia_gpu.bat）的完整路徑'}
+        if time.time() - getattr(self, '_comfy_launch_t', 0) < 300: return {'ok': False, 'message': '5 分鐘內已經叫它開過了，ComfyUI 可能還在啟動，等一下'}
         try:
-            self._comfy_launch_t = time.time()
-            subprocess.Popen([exe], cwd=os.path.dirname(exe), close_fds=True, creationflags=(0x00000008 | 0x00000200) if os.name == 'nt' else 0)
+            self._comfy_launch_t = time.time(); self._comfy_open(exe)
             self.log.w(f'生圖：打開 ComfyUI（{why}）：{exe}')
             return {'ok': True, 'message': '🚀 叫 ComfyUI 打開了（啟動大約 1～2 分鐘，好了會自動接著做）'}
         except Exception as ex: return {'ok': False, 'message': f'打不開 ComfyUI：{ex}'}
+
+    def _comfy_autofix(self):
+        """V0.3.73 連不到 ComfyUI 不空等：等 1 分鐘 → 程式沒在跑就打開、還開著（卡住）就重開；
+        之後給它 5 分鐘啟動，還連不到再試一次，再來每 10 分鐘試一次."""
+        if self.cfg.get('comfy_autostart') is False or not self.comfy_exe() or getattr(self, '_comfy_rs_busy', False): return
+        now = time.time(); w0 = getattr(self, 'gen_wait_t', now)
+        if getattr(self, '_fix_w', None) != w0: self._fix_w, self._fix_n, self._fix_t = w0, 0, 0
+        if now - w0 < 60 or (self._fix_n and now - self._fix_t < (300 if self._fix_n == 1 else 600)): return
+        self._fix_n += 1; self._fix_t = now; m = max(1, round((now - w0) / 60))
+        if self._comfy_pids(): self.comfy_restart(f'連不到 {m} 分鐘、程式還開著（多半卡住）')
+        else: self._comfy_launch_t = 0; self.comfy_launch(f'連不到 {m} 分鐘，自動打開')
 
     def _comfy_pids(self):
         """V0.3.72 ComfyUI 的程式：佔著 ComfyUI 連接埠的那個（python）＋Comfy Desktop 本體（ComfyUI.exe）."""
@@ -2440,7 +2468,7 @@ class Engine:
                     if not st['ok']:
                         if not self.gen_wait: self.log.w(f'生圖：連不到 ComfyUI，{len(self.gen_q)} 個工作等它開'); self.gen_wait_t = time.time()
                         self.gen_wait = st['err'] or '連不到 ComfyUI'; self.gen_hot = None
-                        if self.cfg.get('comfy_autostart') and time.time() - getattr(self, 'gen_wait_t', time.time()) > 180: self.comfy_launch('連不到 3 分鐘，自動打開')   # V0.3.62
+                        self._comfy_autofix()                                 # V0.3.73 連不到就自動打開／重開，不空等
                         time.sleep(3); continue
                     if self.gen_wait: self.log.w('生圖：ComfyUI 回來了，繼續'); self.gen_wait = ''
                     jid = self._gen_pick()

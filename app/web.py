@@ -575,7 +575,7 @@ class WebServer:
             elif a == 'launch': r = E.comfy_launch('手機按的')                       # V0.3.62
             elif a == 'crestart': r = E.comfy_restart('手機按的')                    # V0.3.72 🔄 重開 ComfyUI
             elif a == 'crdaily': E.cfg.set('comfy_restart_h', max(0, min(168, int(d.get('h') or 0)))); r = {'ok': True, 'message': ('每 %d 小時趁空檔重開 ComfyUI' % int(d.get('h') or 0)) if d.get('h') else '不自動重開 ComfyUI'}
-            elif a == 'autostart': E.cfg.set('comfy_autostart', bool(d.get('on'))); r = {'ok': True, 'message': '連不到 ComfyUI 3 分鐘就自動打開：' + ('開' if d.get('on') else '關')}
+            elif a == 'autostart': E.cfg.set('comfy_autostart', bool(d.get('on'))); r = {'ok': True, 'message': '連不到 ComfyUI 1 分鐘就自動打開／重開：' + ('開' if d.get('on') else '關')}
             elif a == 'recheck':                                               # V0.3.45 連不到 ComfyUI：馬上再找一次
                 st = E.comfy_status(force=True); r = {'ok': st['ok'], 'message': ('✔ 連上 ComfyUI 了，繼續做' if st['ok'] else '還是連不到：' + (st.get('err') or ''))}
             elif a == 'cancel_many': r = E.gen_cancel_many(d.get('batch') or 0, bool(d.get('run')))   # V0.3.39 批量取消

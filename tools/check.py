@@ -302,6 +302,21 @@ def t_gen():
         time.sleep(0.1)
     assert L_ and '每 24 小時' in L_[0], L_                                      # 開了 25 小時又閒著：趁空檔重開
     del E.comfy_launch; E.cfg.set('comfy_exe', ''); os.unlink(fx.name); E.comfy_status(force=True)
+    la0 = os.environ.get('LOCALAPPDATA'); td = tempfile.mkdtemp(); os.environ['LOCALAPPDATA'] = td   # V0.3.73 新版 Comfy Desktop 的位置也找得到
+    os.makedirs(os.path.join(td, 'Programs', 'Comfy Desktop')); fe = os.path.join(td, 'Programs', 'Comfy Desktop', 'Comfy Desktop.exe'); open(fe, 'w').close()
+    open(os.path.join(td, 'Programs', 'Comfy Desktop', 'Uninstall Comfy Desktop.exe'), 'w').close()
+    E._cexe = None; assert E.comfy_exe() == fe, E.comfy_exe()
+    L_ = []; E.comfy_launch = lambda why='': (L_.append(('開', why)), {'ok': True})[1]; E.comfy_restart = lambda why='': (L_.append(('重開', why)), {'ok': True})[1]
+    E.gen_wait_t = time.time() - 30; E._comfy_autofix(); assert not L_                       # 才 30 秒：先等
+    E.gen_wait_t = time.time() - 70; E._comfy_autofix(); assert L_ and L_[0][0] == '開', L_   # 1 分鐘、程式沒在跑 → 打開
+    E._comfy_autofix(); assert len(L_) == 1                                                   # 剛開：給它 5 分鐘
+    E._fix_t -= 301; E._comfy_pids = lambda: [1234]; E._comfy_autofix(); assert L_[-1][0] == '重開', L_   # 5 分鐘還連不到、程式開著 → 重開
+    E._fix_t -= 301; E._comfy_autofix(); assert len(L_) == 2; E._fix_t -= 300; E._comfy_autofix(); assert len(L_) == 3   # 之後每 10 分鐘
+    E.cfg.set('comfy_autostart', False); E.gen_wait_t = time.time() - 999; E._comfy_autofix(); assert len(L_) == 3   # 關掉就不動
+    for k in ('comfy_launch', 'comfy_restart', '_comfy_pids'): delattr(E, k)
+    E.cfg.set('comfy_autostart', True); E._cexe = None; shutil.rmtree(td, ignore_errors=True)
+    if la0 is None: os.environ.pop('LOCALAPPDATA', None)
+    else: os.environ['LOCALAPPDATA'] = la0
     print('    ✔ ComfyUI 弄丟工作 → 重新送出；卡住 → 提醒、自動中斷清記憶體重排')
     i2 = E.gen_save_input(F.png(9, 9), 't2')
     try: E.gen_add('兩張圖合併', 'x', img); raise AssertionError('只給一張也收了')

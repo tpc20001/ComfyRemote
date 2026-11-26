@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.72'
+APP_VERSION = '0.3.73'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -504,7 +504,7 @@ class GenPage(QWidget):
 
     def launch_comfy(self):
         if not ENG.comfy_exe():
-            p, _ = QFileDialog.getOpenFileName(self, 'Comfy Desktop 的程式（ComfyUI.exe）在哪？', os.environ.get('LOCALAPPDATA', ''), 'ComfyUI (*.exe)')
+            p, _ = QFileDialog.getOpenFileName(self, 'ComfyUI 的程式在哪？（Comfy Desktop.exe 或 run_nvidia_gpu.bat）', os.environ.get('LOCALAPPDATA', ''), 'ComfyUI (*.exe *.bat)')
             if not p: return
             ENG.cfg.set('comfy_exe', p)
         r = ENG.comfy_launch('電腦版按的'); QMessageBox.information(self, 'ComfyUI', r.get('message', ''))
