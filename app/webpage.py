@@ -150,7 +150,7 @@ body.hsel main{padding-bottom:150px}
 .pc input,.pc select{width:100%;min-width:0;height:32px;padding:3px 6px;font-size:13px;border-radius:7px}
 .pc.w2{grid-column:span 2}.pc.wf{grid-column:1/-1}
 .pc.b{flex-direction:row;align-items:center;gap:6px;font-size:12px;color:var(--text);cursor:pointer;align-self:end;height:32px}.pc.b input{width:18px;height:18px;flex:none}.pc.b span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#ov{position:fixed;inset:0;background:rgba(6,7,10,.97);z-index:9850;display:none;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) 8px env(safe-area-inset-bottom,0)}
+#ov{position:fixed;inset:0;background:#06070a;z-index:9850;display:none;flex-direction:column;align-items:center;justify-content:center;padding:env(safe-area-inset-top,0) 8px env(safe-area-inset-bottom,0)}
 #cmp{position:relative;display:none;touch-action:none;user-select:none;-webkit-user-select:none;max-width:100%;max-height:78vh;overflow:hidden;border-radius:6px}
 #cmp img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;max-height:none;pointer-events:none}
 #cmpb{position:absolute;inset:0;clip-path:inset(0 0 0 50%)}
@@ -417,13 +417,14 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 #hmode{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#hmode::-webkit-scrollbar{display:none}#hmode>*{flex:0 0 auto}
 /* 排隊中的卡片縮成精簡一列：一行提示詞＋小縮圖＋按鈕 */
 #gj .jw .clamp{-webkit-line-clamp:1}#gj .jw>.mu.hx,#gj .jw>.hx:not(.row){display:none}#gj .jw .th{margin:4px 0}#gj .jw>.th{flex:0 0 auto}#gj .jw .th img.src,#gj .jw .th video.src{height:40px;width:40px;max-width:none;opacity:.6}#gj .jw .row.hx .pill{height:30px;font-size:12px}#gj .jw .row:first-child .mu{font-size:11px}#gj .jw{display:flex;flex-wrap:wrap;align-items:center;column-gap:8px}#gj .jw>.row:first-child,#gj .jw>.clamp{flex-basis:100%}#gj .jw>.row.hx{flex:1;margin:0}
+#ovx{position:absolute;top:calc(10px + env(safe-area-inset-top,0px));right:10px;width:42px;height:42px;padding:0;border-radius:50%;z-index:3;font-size:16px}
 </style></head><body><button id="totop" title="回到最上面" onclick="scrollTo({top:0,behavior:'smooth'})">⬆</button>
 <header><div class="bar"><div class="logo"><i></i>__NAME__</div><div class="rt"><button class="hslv" id="hslv" title="🤝 跟 SortCut、GoPro Fusion 360 分電腦效能">Lv–</button><span class="ver" id="ver" title="程式版本">V__VER__</span></div></div>
 <nav id="tabs"></nav></header>
 <main id="v"></main>
 <div class="toast" id="toast"></div>
 <div id="ov"><div id="ovn"></div><button class="ovnav" id="ovp" title="上一張（←）">‹</button><button class="ovnav" id="ovnx" title="下一張（→）">›</button><img id="ovi"><div id="cmp"><img id="cmpa"><div id="cmpb"><img id="cmpbi"></div><div id="cmpl"><i></i></div><span class="cl">舊</span><span class="cr">新</span></div><div id="ovs"></div><div class="ovbot"><button id="ovp2">‹ 上一張</button><span id="ovn2"></span><button id="ovnx2">下一張 ›</button></div><div class="ovact"><button class="pill" id="ovr">✏ 再改這張</button><button class="pill" id="ovpng" style="display:none" title="綠色背景變透明，存成去背 PNG">⬇ 透明 PNG</button><button class="pill acc" id="ovo" style="display:none"></button><a class="pill" id="ovd" download>⬇ 存</a><button class="pill" id="ovsh" style="display:none">📤 分享</button></div>
-<div class="ovact sm"><button class="pill" id="ovm3" title="同一張照片、同一句，換隨機種子再做 3 張，挑最好的">🎲 再 3 張</button><button class="pill" id="ovc">⇆ 對比</button><button class="pill" id="ovab" style="display:none"></button><button class="pill" id="ovpair" style="display:none" title="原圖和結果拼成一張存到手機">🖼 拼圖</button><button class="pill" id="ovan" style="display:none" title="這張照片動起來（照片變影片）">🎬 動起來</button><button class="pill" id="ovfl" style="display:none" title="原圖當開始、這張當結束，做成影片">🎞 首尾幀</button><button class="pill" id="ovtpl" style="display:none" title="這張的提示詞存成「📚 範本」或加進「🏷 積木」">📌 存提示詞</button><button class="pill er" id="ovdel" style="display:none" title="放進回收桶">🗑</button><button class="pill" id="ovu" style="display:none">✨ 放大</button><button class="pill" id="ovx" title="關（也可以往下滑）">✖</button></div><div class="mu" style="margin-top:6px;color:#aaa">左右滑換張 · 往下滑關掉 · 點兩下放大</div></div>
+<div class="ovact sm"><button class="pill" id="ovm3" title="同一張照片、同一句，換隨機種子再做 3 張，挑最好的">🎲 再 3 張</button><button class="pill" id="ovc">⇆ 對比</button><button class="pill" id="ovab" style="display:none"></button><button class="pill" id="ovpair" style="display:none" title="原圖和結果拼成一張存到手機">💾 存對比圖</button><button class="pill" id="ovan" style="display:none" title="這張照片動起來（照片變影片）">🎬 動起來</button><button class="pill" id="ovfl" style="display:none" title="原圖當開始、這張當結束，做成影片">🎞 首尾幀</button><button class="pill" id="ovtpl" style="display:none" title="這張的提示詞存成「📚 範本」或加進「🏷 積木」">📌 存提示詞</button><button class="pill er" id="ovdel" style="display:none" title="放進回收桶">🗑</button><button class="pill" id="ovu" style="display:none">✨ 放大</button><button class="pill" id="ovx" title="關（也可以往下滑）">✖</button></div><div class="mu" style="margin-top:6px;color:#aaa">左右滑換張 · 往下滑關掉 · 點兩下放大</div></div>
 <div id="fpk"><div class="row"><b style="font-size:16px">🎞 從影片挑格</b><span class="grow"></span><button class="pill" id="fpx">✖ 關</button></div>
  <div class="mu" id="fpi" style="margin:2px 0 6px"></div><video id="fpv" playsinline muted preload="auto"></video>
  <div class="fpn">第 <span id="fpn">0</span> 格 <small id="fpt"></small></div>
@@ -1334,7 +1335,7 @@ async function gClick(e){{const fx=e.target.closest('[data-gexp]');if(fx&&!e.tar
   if(a==='restart'){const r=await api('/api/gen_act',{a:'restart',id});toast(r.message||'',4000);setTimeout(gJobs,1500);return}
   if(a==='cancel'&&!confirm('取消 #'+id+'？'))return;const r=await api('/api/gen_act',{a,id});toast(r.ok?'好了':(r.message||'失敗'));if(CUR==='gen')gJobs();else hLoad(true)}
 // ---- ⇆ 對比：舊的（左）和新的（右）疊在一起，中間拉桿左右拉
-function cmpShow(on,keep){$('#cmp').style.display=on?'block':'none';$('#ovi').style.display=on?'none':'';$('#ovc').textContent=on?'🖼 單張':'⇆ 對比';if(on){cmpFit();cmpSet(keep?CMPP:50)}}
+function cmpShow(on,keep){$('#cmp').style.display=on?'block':'none';$('#ovi').style.display=on?'none':'';$('#ovc').textContent=on?'👁 看單張':'⇆ 對比';if(on){cmpFit();cmpSet(keep?CMPP:50)}}
 function cmpFit(){const i=$('#cmpbi'),c=$('#cmp');const go=()=>{const w=i.naturalWidth||1,h=i.naturalHeight||1,mw=innerWidth*0.8,mh=innerHeight*0.78,k=Math.min(mw/w,mh/h);c.style.width=Math.round(w*k)+'px';c.style.height=Math.round(h*k)+'px'};
   if(i.complete&&i.naturalWidth)go();else i.onload=go}
 function cmpSet(p){p=Math.max(0,Math.min(100,p));CMPP=p;$('#cmpb').style.clipPath=`inset(0 0 0 ${p}%)`;$('#cmpl').style.left=p+'%'}
