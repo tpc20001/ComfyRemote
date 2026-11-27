@@ -756,11 +756,11 @@ class WebServer:
         return self._send_file(req, p)
 
     def _send_file(self, req, p):
-        ct = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.mp4': 'video/mp4'}.get(p.suffix.lower(), 'application/octet-stream')
+        ct = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime', '.mkv': 'video/x-matroska'}.get(p.suffix.lower(), 'application/octet-stream')
         H = {'Cache-Control': 'private, max-age=31536000, immutable', 'Accept-Ranges': 'bytes'}
         if req.q('dl'): H['Content-Disposition'] = "attachment; filename*=UTF-8''" + urllib.parse.quote(p.name)
         size = p.stat().st_size; rg = re.match(r'bytes=(\d*)-(\d*)', req.headers.get('range') or '')
-        if rg and (rg.group(1) or rg.group(2)):
+        if rg and (rg.group(1) or rg.group(2)):                                # 影片一段一段要（iPhone 一定要這樣才播得了）
             a = int(rg.group(1)) if rg.group(1) else max(0, size - int(rg.group(2))); b = int(rg.group(2)) if rg.group(1) and rg.group(2) else size - 1
             b = min(b, size - 1, a + 8 * 1024 * 1024 - 1)
             if a >= size: return Resp(416, b'', ct, {'Content-Range': f'bytes */{size}'})
@@ -775,14 +775,4 @@ class WebServer:
             try: t = self.E().gen_thumb(p, int(req.q('w')))
             except ValueError: t = None
             if t: return Resp(200, t.read_bytes(), 'image/jpeg', {'Cache-Control': 'private, max-age=31536000, immutable'})
-        ct = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime', '.mkv': 'video/x-matroska'}.get(p.suffix.lower(), 'application/octet-stream')
-        H = {'Cache-Control': 'private, max-age=31536000, immutable', 'Accept-Ranges': 'bytes'}
-        if req.q('dl'): H['Content-Disposition'] = "attachment; filename*=UTF-8''" + urllib.parse.quote(p.name)
-        size = p.stat().st_size; rg = re.match(r'bytes=(\d*)-(\d*)', req.headers.get('range') or '')
-        if rg and (rg.group(1) or rg.group(2)):                                # 手機播影片會一段一段要（iPhone 一定要這樣才播得了）
-            a = int(rg.group(1)) if rg.group(1) else max(0, size - int(rg.group(2))); b = int(rg.group(2)) if rg.group(1) and rg.group(2) else size - 1
-            b = min(b, size - 1, a + 8 * 1024 * 1024 - 1)
-            if a >= size: return Resp(416, b'', ct, {'Content-Range': f'bytes */{size}'})
-            with open(p, 'rb') as f: f.seek(a); data = f.read(b - a + 1)
-            H['Content-Range'] = f'bytes {a}-{a + len(data) - 1}/{size}'; return Resp(206, data, ct, H)
-        return Resp(200, p.read_bytes(), ct, H)
+        return self._send_file(req, p)

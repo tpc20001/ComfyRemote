@@ -2062,8 +2062,7 @@ class Engine:
         try:
             port = urllib.parse.urlsplit(self.comfy_st.get('url') or '').port
             if not port: return
-            out = subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, timeout=15, creationflags=0x08000000).stdout
-            pid = next((int(f[4]) for f in (l.split() for l in out.splitlines()) if len(f) >= 5 and f[3].upper() == 'LISTENING' and f[1].rsplit(':', 1)[-1] == str(port) and f[4].isdigit()), 0)
+            pid = next(iter(self._port_pids(port)), 0)
             if not pid: return
             P = self._ps_proc(pid); cl = str(P.get('CommandLine') or '')
             if 'main.py' not in cl: return
@@ -2113,18 +2112,20 @@ class Engine:
         if self._comfy_pids(): self.comfy_restart(f'連不到 {m} 分鐘、程式還開著（多半卡住）')
         else: self._comfy_launch_t = 0; self.comfy_launch(f'連不到 {m} 分鐘，自動打開')
 
+    def _port_pids(self, port):
+        """Windows：哪些程式在聽這個連接埠（netstat）."""
+        try:
+            out = subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, timeout=15, creationflags=0x08000000).stdout
+            return {int(f[4]) for f in (l.split() for l in out.splitlines()) if len(f) >= 5 and f[3].upper() == 'LISTENING' and f[1].rsplit(':', 1)[-1] == str(port) and f[4].isdigit()}
+        except Exception as ex: self.log.w(f'生圖：查連接埠 {port} 失敗：{ex}'); return set()
+
     def _comfy_pids(self):
         """V0.3.72 ComfyUI 的程式：佔著 ComfyUI 連接埠的那個（python）＋Comfy Desktop 本體（ComfyUI.exe）."""
         if os.name != 'nt': return []
         NW = 0x08000000; P = set()
         try: port = urllib.parse.urlsplit(self.comfy_st.get('url') or self.cfg.get('comfy_url') or 'http://127.0.0.1:8000').port or 8000
         except Exception: port = 8000
-        try:
-            out = subprocess.run(['netstat', '-ano', '-p', 'TCP'], capture_output=True, text=True, timeout=15, creationflags=NW).stdout
-            for l in out.splitlines():
-                f = l.split()
-                if len(f) >= 5 and f[3].upper() == 'LISTENING' and f[1].rsplit(':', 1)[-1] == str(port) and f[4].isdigit(): P.add(int(f[4]))
-        except Exception as ex: self.log.w(f'生圖：找 ComfyUI 程式失敗：{ex}')
+        P.update(self._port_pids(port))
         exe = os.path.basename(self.comfy_exe() or 'ComfyUI.exe')
         if exe.lower().endswith('.exe'):
             try:
