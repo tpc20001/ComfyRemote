@@ -348,7 +348,7 @@ class WebServer:
         return jresp({'ok': True, 'ctl': E.bg_view()})
 
     SETTABLE = {'ui_theme': str, 'cpu_guard': bool, 'cpu_max': int, 'bg_ramp_sec': int, 'demo_n': int, 'close_to_tray': bool, 'auto_restart': bool,
-                'comfy_url': str, 'gen_mp': float, 'gen_timeout_min': int, 'keep_awake': bool, 'hf_token': str, 'gen_free_idle': bool, 'gen_auto_retry': bool, 'comfy_restart_h': int, 'comfy_restart_stall': bool, 'comfy_exe': str, 'comfy_direct': bool, 'comfy_cmd': dict}   # 手機可以改的設定（新功能的設定加在這裡）
+                'comfy_url': str, 'gen_mp': float, 'gen_timeout_min': int, 'keep_awake': bool, 'hf_token': str, 'gen_free_idle': bool, 'gen_auto_retry': bool, 'comfy_restart_h': int, 'comfy_restart_stall': bool, 'comfy_exe': str, 'comfy_direct': bool, 'comfy_autostart': bool, 'comfy_cmd': dict}   # 手機可以改的設定（新功能的設定加在這裡）
 
     def api_settings(self, req):
         E = self.E()
@@ -363,6 +363,8 @@ class WebServer:
             return jresp({'ok': True, 'changed': ch})
         cfg = {k: E.cfg.get(k) for k in self.SETTABLE}
         if cfg.get('hf_token'): cfg['hf_token'] = '••••' + str(cfg['hf_token'])[-4:]          # 金鑰不整個傳回手機
+        try: cfg['_cexe'] = E.comfy_exe()                                           # 自動找到的 ComfyUI 程式（給設定頁顯示）
+        except Exception: pass
         return jresp({'ok': True, 'cfg': cfg, 'lab': dict(E.cfg.get('lab') or {}), 'labs': getattr(self.app_mod(), 'LAB_LIST', [])})
 
     def api_lab(self, req):
