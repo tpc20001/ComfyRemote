@@ -28,8 +28,8 @@ header{position:sticky;top:0;z-index:20;background:var(--nav);border-bottom:1px 
 .ver{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:8px;padding:1px 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
 
 nav{display:flex;gap:6px;padding:0 10px 8px}
-nav button{flex:2;background:var(--tab);border:1px solid var(--line);color:var(--sub);border-radius:9px;padding:8px 0;font-weight:700}
-nav button.on{background:var(--tabon);border-color:var(--tabline);color:var(--strong)}nav button.tset{flex:1;font-size:13px;white-space:nowrap}
+nav button{flex:2 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--tab);border:1px solid var(--line);color:var(--sub);border-radius:9px;padding:8px 0;font-weight:700}
+nav button.on{background:var(--tabon);border-color:var(--tabline);color:var(--strong)}nav button.tset{flex:1 1 0;font-size:13px}
 nav em{font-style:normal;margin-left:5px;background:var(--green);color:#06210f;border-radius:9px;padding:0 6px;font-size:11px}
 main{padding:10px 10px calc(30px + var(--safe))}
 .toast{position:fixed;left:50%;top:76px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line2);color:var(--text);padding:8px 14px;border-radius:10px;z-index:9900;font-size:13px;display:none;max-width:90vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.4)}
@@ -412,6 +412,9 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .igck{margin-top:12px;border:1px solid var(--line2);border-radius:12px;padding:8px 12px}.igck summary{cursor:pointer;font-weight:700;font-size:14px}.igck summary small{font-weight:400;opacity:.7}.igckB{font-size:13px;line-height:1.6}.igckB ol{padding-left:20px;margin:6px 0}.igckB input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:inherit;margin:6px 0}.igckR{display:flex;gap:8px}.igckR .btn{flex:1}   /* TK_V1.0.80 */
 .igdA textarea{width:100%;min-height:84px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px;font-size:15px}.igdA .btn{margin-top:8px;width:100%}#igm{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:13.5px;background:var(--card);border:1px solid var(--line)}#igm.err{border-color:var(--red)}#igm.ok{border-color:var(--green)}.igdDir{font-size:12px;color:var(--sub);margin-top:8px;display:flex;gap:8px;align-items:center}.igdDir button{font-size:12px;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--sub)}
 #totop{position:fixed;right:12px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:9600;width:42px;height:42px;border-radius:50%;border:1px solid var(--line2);background:var(--panel);color:var(--strong);font-size:18px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;cursor:pointer}#totop.on{display:block}
+#genv>:empty{display:none}
+@media(max-width:480px){nav{gap:4px;padding:0 6px 8px}nav button{font-size:13.5px;padding:8px 2px}}
+#hmode{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}#hmode::-webkit-scrollbar{display:none}#hmode>*{flex:0 0 auto}
 </style></head><body><button id="totop" title="回到最上面" onclick="scrollTo({top:0,behavior:'smooth'})">⬆</button>
 <header><div class="bar"><div class="logo"><i></i>__NAME__</div><div class="rt"><button class="hslv" id="hslv" title="🤝 跟 SortCut、GoPro Fusion 360 分電腦效能">Lv–</button><span class="ver" id="ver" title="程式版本">V__VER__</span></div></div>
 <nav id="tabs"></nav></header>
@@ -653,9 +656,10 @@ function gMrg(w){const box=$('#gmrg');if(!box)return;if(/^三張圖合併/.test(
     const TIP=['想讓臉和背景一個像素都不動：按圖一下面「🖌 只改圖一的哪裡」塗衣服那塊','想讓人一個像素都不動：「🖌 只改圖一的哪裡」塗人物，再按「🔁 反過來：塗的保留」','圖二的姿勢越清楚（全身、正面）越準；可以再補一句「左手插口袋」這種細節','兩個人的照片光線、角度接近，合起來比較自然','商品圖越清楚（去背、正面）越準；有文字的商品用 INT8 品質比較好','圖二只要能看出畫風就好，越有特色越明顯'];
     toast(`${GMRG[i][0]}：${GMRG[i][1]}。💡 ${TIP[i]}`,6000)}}
 function gWfInfo(){const w=gWf();gWq();gBig();gMrg(w);gMode();gVact();gTool();if((w.n_img||0)<=1)gPrev();if(GREF)gRef();const isB=BIG.some(b=>b[0]===w.name)||!!gModeOf(w.name),ad=$('#gadv');if(ad){ad.classList.toggle('flat',!isB);ad.open=!isB||LS.get('gadv_open',false);ad.ontoggle=()=>{if(!ad.classList.contains('flat'))LS.set('gadv_open',ad.open)}}setTimeout(()=>{const wi=$('#gwi');if(wi)wi.classList.toggle('big',isB&&!w.err)},0);const need=!!w.need_img;
-  const T=x=>`<span class="gt">${x}</span>`;
-  $('#gwi').innerHTML=w.err?`<span style="color:var(--red)">✖ ${esc(w.err)}</span>`:T(need?((w.kinds||[]).includes('video')?`📷 ${(w.kinds||[]).filter(k=>k==='image').length} 張照片＋🎬 ${(w.kinds||[]).filter(k=>k==='video').length} 支影片${w.segmented?' · 分段跑':''}`:(w.n_img||0)>1?`📷 要 ${w.n_img} 張照片`:'📷 要照片'):'不用照片')
-    +(w.pos?`<span class="gt" title="${esc(w.pos)}">✏ 有吃提示詞</span>`:(w.cr||{}).blank_ok?'':T('⚠ 找不到提示詞欄位'))+(w.outputs&&w.outputs.length?`<span class="gt" title="${esc(w.outputs.join('、'))}">${(w.kinds_out||'')==='video'||/video/i.test(w.outputs.join(''))?'🎬 出影片':'🖼 出圖'}</span>`:'')+(GLINE[w.name]?`<span class="gt">${GLINE[w.name].steps} 步</span><span class="gt" title="${esc(GLINE[w.name].lic)}">${/Apache|MIT/.test(GLINE[w.name].lic)?'✔ 可商用':/不能商用|非商用|NC|研究/.test(GLINE[w.name].lic)?'⚠ 不能商用':'授權看說明'}</span><div class="mu" style="flex-basis:100%;margin-top:2px">${esc(GLINE[w.name].note)}</div>`:'');
+  const T=x=>x?`<span class="gt">${x}</span>`:'';   // V0.3.76 只留要注意的（影片、多張、找不到提示詞欄位），一般的不顯示
+
+  $('#gwi').innerHTML=w.err?`<span style="color:var(--red)">✖ ${esc(w.err)}</span>`:T(need?((w.kinds||[]).includes('video')?`📷 ${(w.kinds||[]).filter(k=>k==='image').length} 張照片＋🎬 ${(w.kinds||[]).filter(k=>k==='video').length} 支影片${w.segmented?' · 分段跑':''}`:(w.n_img||0)>1?`📷 要 ${w.n_img} 張照片`:''):'不用照片')
+    +(w.pos||(w.cr||{}).blank_ok?'':T('⚠ 找不到提示詞欄位'))+(w.outputs&&w.outputs.length&&((w.kinds_out||'')==='video'||/video/i.test(w.outputs.join('')))?'<span class="gt">🎬 出影片</span>':'')+(GLINE[w.name]?`<span class="gt">${GLINE[w.name].steps} 步</span><span class="gt" title="${esc(GLINE[w.name].lic)}">${/Apache|MIT/.test(GLINE[w.name].lic)?'✔ 可商用':/不能商用|非商用|NC|研究/.test(GLINE[w.name].lic)?'⚠ 不能商用':'授權看說明'}</span><div class="mu" style="flex-basis:100%;margin-top:2px">${esc(GLINE[w.name].note)}</div>`:'');
   const cr=w.cr||{};$('#gh3').style.display=/H3|minimax/i.test(w.name||'')&&!cr.simple?'':'none';
   $('#gp').placeholder=cr.placeholder||'想怎麼改？例如：把衣服換成紅色連身裙';
   $('#gnd').style.display=w.neg?'':'none';$('#gcard1').style.display=need?'':'none';$('#gfolder').style.display=(w.n_img||0)>1?'none':'';gSlots(w);gMrec(w);gModels();LS.set('gwf',w.name||'');gParams()}
@@ -992,7 +996,7 @@ async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;
   LS.set('gpend',act.length>0);{const ca=$('#gcanall');if(ca){ca.style.display=GQS.n>0?'':'none';ca.textContent=`⏹ 全部取消（${GQS.n}）`;ca.onclick=()=>gCancelMany(0)}}const ge=$('#geta');if(ge){const e=gEta(act);ge.textContent=e||'做好的在「歷史紀錄」'}
   const nd=GJ.filter(x=>x.state==='done').length;
   const hb=[],seenW=new Set();for(const x of act){const bk=x.batch||x.id;if(x.state==='wait'&&seenW.has(bk)&&!GEXP.has(bk))continue;if(x.state==='wait'){seenW.add(bk);const m=(GQS.b[String(bk)]||0)-1;hb.push(gCard(x));if(m>0&&!GEXP.has(bk))hb.push(`<div class="gfin gfold" data-gexp="${bk}" style="cursor:pointer;margin-top:-4px"><div class="h"><b style="flex:1 1 auto">📚 同一批還有 ${m} 張在排隊</b><span class="mu">點一下展開</span><button class="pill er" data-g="cancelb" data-id="${bk}">⏹ 取消這一批</button></div></div>`);continue}hb.push(gCard(x))}   // V0.3.61 批量的排隊卡片收成一張
-  const h=hb.join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」 · 做好的在「歷史紀錄」${nd?`（最近 ${nd} 張）`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
+  const h=hb.join('')||`<div class="empty2"><b>☕ 現在沒有在做的</b><span>選照片、打提示詞，按「開始」${nd?` · 最近做好 ${nd} 張在「歷史紀錄」`:''}</span></div>`;if(h!==GLAST){GLAST=h;$('#gj').innerHTML=h}
   // 剛做好的（最近 1 小時）：直接在這裡看，不用切到歷史紀錄
   const now=Date.now()/1000+GOFF,D=GJ.filter(x=>x.state==='done'&&x.outs&&x.outs.length&&now-(x.t1||x.t)<3600&&!x.cmp),DN=D.length;D.splice(12);
   const dh=D.length?`<div class="gdh"><b>✨ 剛做好</b><span class="mu" style="flex:1 1 auto">最近 1 小時 ${DN} 個 · 點圖放大（左右換）</span><button class="pill" data-g="gohist">📚 看全部</button></div><div class="gds">${D.map(x=>x.outs.slice(0,1).map(o=>ISV(o)?`<span class="gdi"><video src="${IMGU(o)}#t=0.5" muted playsinline preload="metadata" controls></video><button class="gdv" data-g="vnext" data-id="${x.id}" data-v="${esc(o)}">⏭ 接下一段</button></span>`:`<span class="gdi"><img src="${IMGT(o)}" data-big="${esc(o)}" data-id="${x.id}" data-i="0" loading="lazy">${(BIG.find(b=>b[0]===x.wf)||[])[1]?`<i>${BIG.find(b=>b[0]===x.wf)[1]}</i>`:''}${x.mask?'<i class="m">🖌</i>':''}${x.vote?`<i class="v">★${x.vote}</i>`:''}${x.outs.length>1?`<i class="n">+${x.outs.length-1}</i>`:''}</span>`).join('')).join('')}</div>`:'';
@@ -1539,7 +1543,7 @@ function hModeBar(){const b=$('#hmode');if(!b)return;const cur=LS.get('hmode',''
 async function rHist(again){if(again)return hPoll();
   $('#v').innerHTML=`<div class="panel"><h3>📜 歷史紀錄　<span class="mu" id="hn"></span></h3>
   <div class="seg" id="hvw" style="margin-bottom:6px"></div><div class="mu" id="htip" style="margin:-2px 0 6px"></div>
-  <div class="row" id="hmode" style="gap:6px;flex-wrap:wrap;margin:8px 0 2px"></div>
+  <div class="row" id="hmode" style="gap:6px;margin:8px 0 2px"></div>
   <details class="gadv hflt" id="hflt"><summary>🔍 搜尋／篩選 <span class="mu" id="hfn"></span></summary>
   <div class="row"><input id="hq" class="gsel" placeholder="搜尋提示詞或 #編號"><button class="pill" id="hgo">🔍</button><button class="pill" id="hclr" title="清除所有篩選">✕ 清除</button></div><div class="gtcat" id="hpk" style="margin-top:6px"></div>
   <div class="row" style="margin-top:6px"><select id="hs"><option value="">全部狀態</option><option value="done">✔ 完成</option><option value="fail">✖ 失敗</option><option value="stop">⏹ 取消</option><option value="wait">⏳ 排隊</option></select><select id="hw" class="gsel"><option value="">全部流程</option></select></div>
