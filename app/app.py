@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QTableWidgetItem, QHeaderView, QAbstractItemView, QProgressBar, QDialog, QMenu, QSystemTrayIcon, QFormLayout, QGroupBox,
                                QPlainTextEdit, QTextBrowser, QFrame, QSizePolicy, QStyledItemDelegate, QStyle, QSlider, QInputDialog)
 
-APP_VERSION = '0.3.81'
+APP_VERSION = '0.3.82'
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import core  # noqa: E402
@@ -2690,6 +2690,12 @@ if ($argline) { Start-Process -FilePath $exe -ArgumentList $argline -WorkingDire
 def run_state_path(): return ENG.data / 'run_state.json'
 
 
+def run_state_upd(**kw):
+    """run_state.json 改幾個欄位（讀不到就從空的開始）."""
+    p = run_state_path(); st = json.loads(p.read_text(encoding='utf-8')) if p.exists() else {}
+    st.update(kw); p.write_text(json.dumps(st), encoding='utf-8')
+
+
 def _on_commit(_m=None):
     """Windows 關機／登出：標記正常結束（不要重開）；關機被取消的話 1 分鐘後把記號拿掉."""
     try: setattr(getattr(QApplication.instance(), '_ak_main', None), 'quitting', True)
@@ -2703,8 +2709,7 @@ def _commit_cancelled():
     try: (ENG.data / f'clean_exit_{os.getpid()}.flag').unlink()
     except Exception: pass
     try:
-        st = json.loads(run_state_path().read_text(encoding='utf-8')) if run_state_path().exists() else {}
-        st.update(clean=False); run_state_path().write_text(json.dumps(st), encoding='utf-8')
+        run_state_upd(clean=False)
         w = getattr(QApplication.instance(), '_ak_main', None)
         if w is not None: w.quitting = False
     except Exception: pass
@@ -2724,8 +2729,7 @@ def _proc_ft():
 def mark_clean_exit():
     try:
         (ENG.data / f'clean_exit_{os.getpid()}.flag').write_text(time.strftime('%Y-%m-%d %H:%M:%S'), encoding='utf-8')
-        st = json.loads(run_state_path().read_text(encoding='utf-8')) if run_state_path().exists() else {}
-        st.update(clean=True, t_end=time.time()); run_state_path().write_text(json.dumps(st), encoding='utf-8')
+        run_state_upd(clean=True, t_end=time.time())
     except Exception: pass
 
 

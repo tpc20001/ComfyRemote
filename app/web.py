@@ -134,6 +134,10 @@ class Resp:
         self.code = code; self.body = body; self.ctype = ctype; self.headers = headers or {}
 
 
+def _nobody(req, what='檔案'):
+    return None if req.method == 'POST' and req.body else jresp({'ok': False, 'message': f'沒有收到{what}'})
+
+
 def jresp(obj, code=200, headers=None):
     return Resp(code, json.dumps(obj, ensure_ascii=False, default=str).encode('utf-8'), headers=headers)
 
@@ -385,7 +389,7 @@ class WebServer:
     def api_update(self, req):
         """手機上傳更新包（<前綴>_V….zip）→ 放進 UPDATE → 在電腦上熱更新（程式不用關）."""
         E = self.E(); W = self.W(); M = self.app_mod()
-        if req.method != 'POST' or not req.body: return jresp({'ok': False, 'message': '沒有收到檔案'})
+        if (e_ := _nobody(req, '檔案')): return e_
         nm = re.sub(r'[^\w.\-]', '_', req.q('name') or 'update.zip')
         if not nm.lower().endswith('.zip'): nm += '.zip'
         d = E.root / 'UPDATE'; d.mkdir(exist_ok=True); p = d / nm; p.write_bytes(req.body)
@@ -407,7 +411,7 @@ class WebServer:
 
     def api_update_check(self, req):
         E = self.E(); M = self.app_mod()
-        if req.method != 'POST' or not req.body: return jresp({'ok': False, 'message': '沒有收到檔案'})
+        if (e_ := _nobody(req, '檔案')): return e_
         nm = re.sub(r'[^\w.\-]', '_', req.q('name') or 'update.zip')
         if not nm.lower().endswith('.zip'): nm += '.zip'
         for o in self._pending().glob('*.zip'):
@@ -482,7 +486,7 @@ class WebServer:
         return jresp(out)
 
     def api_gen_upload(self, req):
-        if req.method != 'POST' or not req.body: return jresp({'ok': False, 'message': '沒有收到照片'})
+        if (e_ := _nobody(req, '照片')): return e_
         try: return jresp({'ok': True, 'img': self.E().gen_save_input(req.body, '手機' + (f'，影片第 {req.q("tag")[1:].lstrip("0") or 0} 格' if req.q('tag') else ''), req.q('tag') or '')})
         except Exception as ex: return self._gen_err(ex)
 
@@ -600,7 +604,7 @@ class WebServer:
 
     def api_gen_wf(self, req):
         """上傳流程 JSON（ComfyUI 一般存檔或 Export (API) 都可以）."""
-        if req.method != 'POST' or not req.body: return jresp({'ok': False, 'message': '沒有收到檔案'})
+        if (e_ := _nobody(req, '檔案')): return e_
         try: nm = self.E().gen_wf_save(req.q('name') or 'workflow', req.body); self._gen_refresh(); return jresp({'ok': True, 'name': nm, 'message': f'已匯入流程「{nm}」'})
         except Exception as ex: return self._gen_err(ex)
 
@@ -626,7 +630,7 @@ class WebServer:
         try:
             if a == 'new': c = E.people_new(req.q('name')); return jresp({'ok': True, 'code': c, 'message': f'✔ 建好 {c}'})
             if a == 'add':
-                if req.method != 'POST' or not req.body: return jresp({'ok': False, 'message': '沒有收到照片'})
+                if (e_ := _nobody(req, '照片')): return e_
                 return jresp({'ok': True, 'f': E.people_add_photo(req.q('code'), req.body)})
             if a == 'name': E.people_save(req.q('code'), req.q('name')); return jresp({'ok': True})
             if a == 'cover':
