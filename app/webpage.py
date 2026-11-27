@@ -874,9 +874,9 @@ function gGoLbl(){const b=$('#ggo');if(!b||b.disabled||!GWFS.length)return;const
   const WL=gBoth()?gBigOn().map(x=>x[0]):[w.name];let n=0,sec=0;const PAIR=LS.get('gorder','txt')==='pair'&&np>1&&nl>1;WL.forEach(x=>{const k=(PAIR?Math.max(np,nl):np*nl)*nc;n+=k;sec+=k*(GSPD[x]||(BIG.find(y=>y[0]===x)||[])[3]||(/H3|影片/.test(x)?300:/合併/.test(x)?50:60))});
   const md=gModeOf(w.name),vb={edit:'改圖',merge:'合併',vid:'做影片',fl:'做影片'}[md]||'開始',un=md==='vid'||md==='fl'?'支':'張';const fl0=md==='fl'&&!(GSF[1]||[]).length&&!(GSI[1]||[]).length;
   const t=fl0?'▶ 先做結束畫面＋影片':(n>1||sec>=60?`▶ ${vb} · ${n} ${un} · 約 ${sec<90?Math.round(sec)+' 秒':Math.round(sec/60)+' 分'}`:`▶ ${vb}`);if(b.textContent!==t)b.textContent=t}
-setInterval(()=>{if(CUR==='gen'&&!document.hidden)gGoLbl()},800);
+setInterval(()=>{if(CUR!=='gen'||document.hidden)return;gGoLbl();const f=$('#gpfix');if(f)f.style.display=/H3|影片/.test(($('#gw')||{}).value||'')?'none':''},800);   // 影片不用「補完整」
 // V0.2.44 提示詞框跟著字數長高（最多 10 行），長的提示詞不用在小框裡捲
-setInterval(()=>{const g=$('#gp');if(!g||CUR!=='gen')return;const h=Math.min(260,Math.max(84,g.scrollHeight+2));if(Math.abs(g.offsetHeight-h)>4&&document.activeElement!==g||g.scrollHeight>g.clientHeight+4){g.style.height='auto';g.style.height=Math.min(260,Math.max(84,g.scrollHeight+2))+'px'}},700);
+setInterval(()=>{const g=$('#gp');if(g&&CUR==='gen'&&!document.hidden&&document.activeElement!==g)gFit()},1500);   // 程式改了字（範本、積木…）也跟著變高
 // V0.1.97 電腦瀏覽器：Ctrl＋V 直接貼上截圖／複製的圖當照片；Ctrl＋Enter 開始（在生圖頁）
 document.addEventListener('paste',e=>{if(CUR!=='gen'||!$('#gpick'))return;const F=[...(e.clipboardData||{}).items||[]].filter(x=>x.kind==='file'&&/^image\//.test(x.type)).map(x=>x.getAsFile()).filter(Boolean);
   if(!F.length)return;e.preventDefault();F.forEach((f,i)=>{if(!f.name||f.name==='image.png'){try{Object.defineProperty(f,'name',{value:`貼上_${Date.now()}_${i}.png`})}catch(x){}}});gAddFiles(F);toast(`📋 貼上 ${F.length} 張`,1500)});
@@ -989,7 +989,7 @@ function gWaitBan(j){const e=$('#gwaitb');if(!e)return;const st=(j.jobs||[]).fil
   if($('#gwR'))$('#gwR').onclick=async()=>{const r=await api('/api/gen_act',{a:'recheck',id:0});toast(r.message||'',4000);gJobs()};
   $('#gwP').onclick=async()=>{const r=await api('/api/bgctl',{a:'pause',k:'gen'}).catch(()=>null);toast(r&&r.ok!==false?'⏸ 生圖暫停了（上面「背景」可以繼續）':'到上面「背景」按暫停',4000);gJobs()}}
 async function gCRestart(){if(!confirm('重開電腦上的 ComfyUI？\n（先關掉、再打開，大約 1～2 分鐘；正在做的會放回排隊，好了自動接著做。只重開，不更新）'))return;const r=await api('/api/gen_act',{a:'crestart',id:0});toast(r.message||'',6000);gJobs()}   // V0.3.72
-async function gJobs(){const j=await api('/api/gen');if(!j.ok||!$('#gj'))return;{const b=$('#gcrs');if(b){b.style.display=j.cexe&&((j.jobs||[]).some(x=>x.state==='run'||x.state==='wait')||j.wait)?'':'none';b.disabled=!!j.crs;b.textContent=j.crs?'🔄 重開中…':'🔄 重開 ComfyUI';b.onclick=gCRestart}}GJ=j.jobs||[];GQS=j.qsum||{n:0,b:{}};GBSEEN=new Set();gWaitBan(j);GOFF=(j.now||Date.now()/1000)-Date.now()/1000;const c=j.comfy||{};
+async function gJobs(){const j=await api('/api/gen');if(j.ok)fbSet(j);if(!j.ok||!$('#gj'))return;{const b=$('#gcrs');if(b){b.style.display=j.cexe&&((j.jobs||[]).some(x=>x.state==='run'||x.state==='wait')||j.wait)?'':'none';b.disabled=!!j.crs;b.textContent=j.crs?'🔄 重開中…':'🔄 重開 ComfyUI';b.onclick=gCRestart}}GJ=j.jobs||[];GQS=j.qsum||{n:0,b:{}};GBSEEN=new Set();gWaitBan(j);GOFF=(j.now||Date.now()/1000)-Date.now()/1000;const c=j.comfy||{};
   const gpu=String(c.gpu||'').replace(/^cuda:\d+\s*/,'').replace(/\s*:\s*cuda\w*$/i,'').replace(/^NVIDIA\s+/,'').replace(/^GeForce\s+/,'');
   $('#gst').innerHTML=c.ok?`<span class="ok"><i></i>ComfyUI ${esc(c.ver||'')}</span>${gpu?`<span title="${esc(c.gpu)}">🎮 ${esc(gpu)}</span>`:''}${c.vram&&c.vram[1]?`<span>VRAM 剩 ${fmtB(c.vram[0])}</span>`:''}`:`<span class="bad"><i></i>連不到 ComfyUI</span>`;
   $('#gerr').innerHTML=(c.ok?'':`<div class="mu" style="color:var(--orange)">電腦上的 ComfyUI 要開著；工作會先排隊，ComfyUI 一開就自動接著跑</div>`)+(j.paused?'<div style="color:var(--orange)">⏸ 生圖在「後台」被暫停了</div>':'');
@@ -1040,7 +1040,6 @@ async function rGen(again){if(again)return gJobs();
   $('#greset').onclick=()=>{if(!confirm('全部重來？照片、提示詞、局部、參考圖、兩個都跑、保持臉不變都清掉（流程和畫質留著）'))return;
     GIMGS=[];GFILES=[];LS.set('gimgs',[]);GMASK.clear();LS.set('gmask',{});GREF=null;LS.set('gref','');LS.set('gboth',false);LS.set('gkeep',false);LS.set('gml',false);
     const g=$('#gp');g.value='';g.rows=3;LS.set('gprompt','');$('#gml').checked=false;gPrev();gRef();gTpl();gWfInfo();scrollTo(0,0);toast('🧹 清乾淨了，選新照片吧',2000)};
-  setInterval(()=>{const f=$('#gpfix');if(f)f.style.display=/H3|影片/.test(($('#gw')||{}).value||'')?'none':''},800);   // 影片不用補完整
   $('#gpfix').onclick=()=>{const g=$('#gp'),v=g.value.trim();if(!v)return toast('先打一句想怎麼改',2000);if(/H3|影片/.test($('#gw').value))return toast('影片的提示詞會自動包成完整格式，不用補',2500);   // V0.2.68 規則式補完整（不多跑模型）
     const R=[[/衣|穿|裙|褲|外套|西裝|制服/,'衣服自然合身，保持人物的臉、五官、髮型和身材不變'],[/背景|場景|地方|街|海邊|房間/,'人物完全不變，光線和色調跟新背景一致，邊緣自然'],[/髮/,'臉和五官不變，髮絲自然'],
       [/光|燈|夕陽|夜/,'人物和內容不變，陰影和反光自然'],[/風格|畫風|動漫|卡通|水彩|素描|插畫/,'保留人物的特徵和構圖'],[/去掉|移除|刪/,'補上自然連貫的背景，看不出來曾經有東西'],[/字|文字|標題/,'字清楚、字型和風格跟畫面搭配']];
@@ -1572,8 +1571,9 @@ function sysFabInit(){if($('#sysFab'))return;const b=document.createElement('div
   b.innerHTML='<button type="button" data-t="pf" title="電腦效能（浮動視窗，原本的頁面不會停）">📊 效能</button><button type="button" data-t="bg" title="後台狀態（浮動視窗）">🖥 背景</button><button type="button" data-t="q" title="正在跑、排隊中的生圖（浮動視窗）">🎨 排隊<em id="fbN" hidden></em></button>';
   b.onclick=e=>{const x=e.target.closest('[data-t]');if(!x)return;e.stopPropagation();const w=$('#sysPop');if(!w)sysPopOpen(x.dataset.t);else if(w.dataset.t===x.dataset.t)sysPopClose();else w._tab(x.dataset.t)};
   document.body.appendChild(b);fbPoll();setInterval(()=>{if(!document.hidden)fbPoll()},8000)}
-async function fbPoll(){try{const j=await api('/api/gen?n=30');if(!j.ok)return;const n=(j.jobs||[]).filter(x=>x.state==='run'||x.state==='wait').length;
-  const e=$('#fbN');if(e){e.hidden=!n;e.textContent=n}const t=$('#nrun');if(t){t.hidden=!n;t.textContent=n}}catch(e){}}
+let FBT=0;   // 生圖頁已經每 2 秒問過狀態：右上角數字直接用那份，不另外再問
+function fbSet(j){FBT=Date.now();const n=(j.jobs||[]).filter(x=>x.state==='run'||x.state==='wait').length;const e=$('#fbN');if(e){e.hidden=!n;e.textContent=n}const t=$('#nrun');if(t){t.hidden=!n;t.textContent=n}}
+async function fbPoll(){if(Date.now()-FBT<7000)return;try{const j=await api('/api/gen?n=30');if(j.ok)fbSet(j)}catch(e){}}
 let PFX=null;
 function sysPopOpen(t0){if($('#sysPop'))return;const w=document.createElement('div');w.id='sysPop';
   w.innerHTML=`<div class="sysPopW"><div class="sysPopH"><b class="sysPopTt"></b><span class="sysPopN">點旁邊回到原本的頁面</span><button type="button" class="sysPopX" title="關閉">✕</button></div><div class="sysPopB"><div class="empty">讀取中…</div></div><div class="sysPopR" title="上下拖：調整視窗高度（點兩下恢復 50%）"><i></i></div></div>`;
@@ -1993,7 +1993,7 @@ function pkDraw(){const box=$('#gpk');if(!box)return;const op=LS.get('gpk_o',tru
     if(r.i===0&&r.v.trim())o.t=r.v.trim();else if(r.i===1&&j>0){c.opts.splice(j,1);c.opts.splice(j-1,0,o)}else if(r.i===2){c.opts.splice(j,1);PKS[c.id]=(PKS[c.id]||[]).filter(x=>x!==o.id);LS.set('pksel',PKS)}else return;
     pkSave();pkDraw();pkPrev()})}
 function gFinal(noML){const g=$('#gp');if(!g)return [];const t=g.value.trim(),ml=!noML&&$('#gml')&&$('#gml').checked,x=pkSuffix();const B=ml?(t?gSplit(t):[]):(t?[t]:[]);const L=(B.length?B:(x?['']:[])).flatMap(pkAll).filter(Boolean);return (noML?L.slice(0,1):L).flatMap(gExpand).slice(0,50)}
-function gFit(){const g=$('#gp');if(!g||g.offsetParent===null)return;g.style.height='auto';g.style.height=Math.min(g.scrollHeight+2,Math.round(innerHeight*.6))+'px'}   // V0.3.67 範本／積木塞字進去也會自動變高
+function gFit(){const g=$('#gp');if(!g||g.offsetParent===null)return;const h0=g.offsetHeight;g.style.height='auto';const h=Math.max(84,Math.min(g.scrollHeight+2,Math.round(innerHeight*.6)));g.style.height=(Math.abs(h-h0)<3?h0:h)+'px'}   // V0.3.67 範本／積木塞字進去也會自動變高
 function pkPrev(){gFit();const e=$('#gpkx');if(!e)return;const x=pkSuffix(),L=gFinal(),t=($('#gp')||{}).value||'';gTabCnt();
   if(!L.length){e.innerHTML='';return}if(L.length===1&&!x&&!/\{[^{}]*\|/.test(t)){e.innerHTML='';return}   // 只有自己打的一句：不用再顯示一次
   const op=LS.get('gfin_o',L.length<=3),hl=s=>{let h=esc(s);if(x)h=h.replace(esc(x),`<i>${esc(x)}</i>`);return h};
