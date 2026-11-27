@@ -1468,7 +1468,7 @@ function hRender(){const shut=LS.get('hshut',{}),G=[];HJ.forEach(x=>{const k=hDa
   const today=hDay(Date.now()/1000),wk=['日','一','二','三','四','五','六'];
   $('#hl').innerHTML=G.map(g=>{const d=new Date(g.k+'T00:00:00');const nm=g.k===today?'今天':`${d.getMonth()+1}/${d.getDate()}（${wk[d.getDay()]}）`;
     return `<details class="hday" data-day="${g.k}" ${shut[g.k]?'':'open'}><summary><b>${nm}</b> <span class="mu">${hUnits(g.L).length} 筆</span></summary><div class="hdg">${hUnits(g.L).map(u=>u.length>1?hGroup(u):gCard(u[0],HVIEW||true)).join('')}</div></details>`}).join('')
-    ||`<div class="mu" style="padding:10px 0">${HVIEW==='trash'?'回收桶是空的':HVIEW==='hidden'?'沒有隱藏的紀錄':'沒有符合的紀錄'}</div>`;
+    ||`<div class="gempty" style="padding:26px 0"><div style="font-size:30px">${HVIEW==='trash'?'🗑':HVIEW==='hidden'?'🙈':'🔍'}</div><b>${HVIEW==='trash'?'回收桶是空的':HVIEW==='hidden'?'沒有隱藏的紀錄':($('#hq')&&$('#hq').value||$('#hs')&&$('#hs').value||$('#hw')&&$('#hw').value)?'沒有符合的紀錄':'還沒有紀錄'}</b>${HVIEW?'':`<div class="mu">${($('#hq')&&$('#hq').value)?'換個關鍵字，或按「✕ 清除」':'到「🎨 生圖」做第一張，做好會出現在這裡'}</div>`}</div>`;
   $$('#hl details.hday').forEach(d=>d.ontoggle=()=>{const o=LS.get('hshut',{});if(d.open)delete o[d.dataset.day];else o[d.dataset.day]=1;LS.set('hshut',o)});
   $$('#hl details.hgrp').forEach(d=>{d.ontoggle=()=>{const o=LS.get('hgopen',{});if(d.open){o[d.dataset.b]=1;mgMount(d.querySelector('.mg'))}else delete o[d.dataset.b];LS.set('hgopen',o)};if(d.open)mgMount(d.querySelector('.mg'))});hSelBar()}
 // 同一批（一次送出的批量照片、影片挑的好幾格）→ 一組：預設收起來；點開第一個是「合併」（照 TikLive 截圖全覽），下面是每一張

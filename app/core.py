@@ -977,14 +977,7 @@ class Engine:
                         for j in (N.get(src) or {}).get('inputs') or []:
                             if j.get('link') in lk: drop.add(lk[j['link']][1])
         drop.discard(ref); drop.discard(g0['id'])
-        wf['nodes'] = [n for n in wf['nodes'] if n['id'] not in drop]
-        wf['links'] = [l for l in L if l[1] not in drop and l[3] not in drop]
-        keep = {l[0] for l in wf['links']}
-        for n in wf['nodes']:
-            for i in n.get('inputs') or []:
-                if i.get('link') is not None and i['link'] not in keep: i['link'] = None
-            for o in n.get('outputs') or []:
-                if o.get('links'): o['links'] = [x for x in o['links'] if x in keep]
+        cls._ui_drop(wf, drop)
         if isinstance(r2v.get('widgets_values'), list) and len(r2v['widgets_values']) >= 5: r2v['widgets_values'][4] = 'max'
         if N.get(ref): N[ref]['title'] = '📷 照片（第一格＋臉的參考）'
         return wf
