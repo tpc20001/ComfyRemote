@@ -1093,6 +1093,17 @@ class Engine:
             except Exception: pass
 
     # ---- ComfyUI 連線
+    def comfy_status_bg(self):
+        """手機每 2 秒問一次狀態用：直接回上次的結果，太舊就在背景重查（不讓手機頁面卡在等 ComfyUI 回話）."""
+        if time.time() - self.comfy_st['t'] > 5 and not getattr(self, '_cst_busy', False):
+            self._cst_busy = True
+            def go():
+                try: self.comfy_status()
+                except Exception: pass
+                finally: self._cst_busy = False
+            threading.Thread(target=go, name='ComfyStatus', daemon=True).start()
+        return self.comfy_status(cached=True)
+
     def comfy_status(self, force=False, cached=False):
         """{'ok','url','ver','gpu','vram','err'}（5 秒內不重查）。cached＝True：只看上次的結果，不連線（握手用，不能卡住）.
         V0.3.71 連過的網址先用比較長的等待（ComfyUI 正在載模型時會慢），連續 2 次、超過 20 秒都沒回才算「連不到」."""

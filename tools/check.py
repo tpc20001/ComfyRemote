@@ -57,6 +57,10 @@ def t_gzip():
     try:
         r = urllib.request.urlopen(urllib.request.Request(f'http://127.0.0.1:{pt}/', headers={'Accept-Encoding': 'gzip'}), timeout=10); b = r.read()
         assert r.headers.get('Content-Encoding') == 'gzip' and b'<script>' in gzip.decompress(b) and len(b) < 160000, len(b)
+        et = r.headers.get('ETag'); assert et
+        try: urllib.request.urlopen(urllib.request.Request(f'http://127.0.0.1:{pt}/', headers={'If-None-Match': et}), timeout=10); raise AssertionError('沒變也重送整頁')
+        except urllib.error.HTTPError as ex: assert ex.code == 304, ex.code              # 沒變：304，不用重新下載
+        assert urllib.request.urlopen(f'http://127.0.0.1:{pt}/', timeout=10).read().count(b'<script>') >= 1   # 不壓縮也行
     finally: S.close()
 
 

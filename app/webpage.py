@@ -24,9 +24,9 @@ header{position:sticky;top:0;z-index:20;background:var(--nav);border-bottom:1px 
 .bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px 6px}
 .logo{font-weight:800;font-size:15px;color:var(--strong);display:flex;align-items:center;gap:7px;letter-spacing:.2px;white-space:nowrap;flex:none}
 .logo i{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
-.clk{font-size:11px;color:var(--sub);font-variant-numeric:tabular-nums}.rt{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;flex:1;margin-left:8px}
+.rt{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;flex:1;margin-left:8px}
 .ver{font-size:11px;color:var(--sub);border:1px solid var(--line);border-radius:8px;padding:1px 6px;white-space:nowrap;font-variant-numeric:tabular-nums}
-.topc{font-size:11px;color:var(--strong);text-decoration:none;font-weight:700;border:1px solid var(--line);border-radius:8px;padding:1px 6px;white-space:nowrap;background:transparent}
+
 nav{display:flex;gap:6px;padding:0 10px 8px}
 nav button{flex:2;background:var(--tab);border:1px solid var(--line);color:var(--sub);border-radius:9px;padding:8px 0;font-weight:700}
 nav button.on{background:var(--tabon);border-color:var(--tabline);color:var(--strong)}nav button.tset{flex:1;font-size:13px;white-space:nowrap}
@@ -358,7 +358,7 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 /* V0.3.41 🏷 提示詞積木／📚 整篇範本 */
 .pkC{border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin:6px 0;background:var(--card)}.pkCn{font-weight:700;font-size:13.5px;color:var(--strong);margin-bottom:6px;user-select:none;-webkit-user-select:none}.pkCn small{font-weight:400;color:var(--sub)}
 .pkOs{display:flex;flex-wrap:wrap;gap:6px}.pkO{border:1px solid var(--line);background:transparent;color:var(--text);border-radius:999px;padding:6px 12px;font-size:14px;max-width:100%;text-align:left;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}.pkO.on{background:var(--accent);border-color:var(--accent);color:#fff}.pkAdd{border:1px dashed var(--line);background:transparent;color:var(--sub);border-radius:999px;padding:6px 12px}
-.pkx{margin-top:6px;padding:8px 10px;border-radius:10px;border:1px dashed var(--accent);font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}.pkx span{flex:1;min-width:160px}
+
 .pdL{display:flex;flex-direction:column;gap:6px}.pdI{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--card);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:pointer}.pdI b{color:var(--strong)}.pdI .mu{font-size:12.5px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #pkOv{position:fixed;inset:0;z-index:2147482500;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:14px}#pkOv .pkW{width:min(560px,100%);background:var(--bg);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;max-height:90vh}
 #pkOv input,#pkOv textarea{width:100%;box-sizing:border-box;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px;font-size:15px}#pkOv textarea{min-height:40vh}#pkOv .pkB{display:flex;gap:8px;flex-wrap:wrap}#pkOv .pkB .btn{flex:1;min-width:90px}
@@ -382,12 +382,12 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .tkdTop input{flex:1 1 140px;min-width:0;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font-size:14px}
 .tkdTop select{padding:7px 6px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font-size:13.5px;max-width:48%}
 .tkdTop button{flex:0 0 auto;padding:7px 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font-size:15px}
-.tkdSub{font-size:11.5px;color:var(--sub);margin:6px 0}
+
 .tkdG{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 @media (min-width:700px){.tkdG{grid-template-columns:repeat(6,1fr)}}
 .tkdC{cursor:pointer;min-width:0}.tkdC b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:3px}.tkdC small{display:block;font-size:10.5px;color:var(--sub)}
 .tkdIm{position:relative;height:0;padding-top:177.78%;background:#14171d;border-radius:8px;overflow:hidden}.tkdIm img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
-.tkdSrc{display:flex;gap:6px;margin-bottom:8px}.tkdSrc button{flex:1;padding:9px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:inherit;font-size:14.5px;font-weight:700}.tkdSrc button.on{background:#2a6b45;border-color:#45d483;color:#fff}
+
 .tkdBar{display:flex;gap:6px;align-items:center;margin-top:6px}.tkdBar span{flex:1;font-size:12.5px;color:var(--sub)}.tkdBar button,.tkdSelBar button{padding:6px 10px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:inherit;font-size:13px;white-space:nowrap}
 .tkdSelBar{position:sticky;bottom:0;z-index:5;display:flex;gap:6px;align-items:center;padding:8px;margin-top:8px;border-radius:12px;background:var(--card);border:1px solid #45d483;box-shadow:0 -4px 14px rgba(0,0,0,.35)}.tkdSelBar span{flex:1;font-size:13px}.tkdSelBar #tkdSelSave{background:#2a6b45;border-color:#45d483;color:#fff;font-weight:700}
 .tkdCk{display:none;position:absolute;left:4px;top:4px;width:22px;height:22px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.45);color:transparent;text-decoration:none;font-size:13px;line-height:18px;text-align:center}.tkdSelOn .tkdCk{display:block}.tkdC.on .tkdCk{background:#2ecc71;color:#fff}.tkdC.on .tkdIm{outline:3px solid #2ecc71;outline-offset:-3px}
@@ -408,7 +408,7 @@ body.pc .gtiles{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}
 .tkdCt button{font-size:16px;padding:6px 12px;border-radius:10px;background:#1b1f27;border:1px solid #2b313c;color:#eee}
 .tkdCt select{padding:6px;border-radius:10px;background:#1b1f27;border:1px solid #2b313c;color:#eee}.tkdTm{margin-left:auto;font-size:12.5px;color:#9aa3b2}
 .tkdTip{font-size:11px;color:#8a93a3;padding:2px 8px 10px}
-.tkdSyncL{display:flex;gap:8px;align-items:center;margin:10px 2px 0;font-size:13.5px}.tkdSyncL input{width:20px;height:20px}.tkdGo{display:flex;gap:8px;margin-top:10px}.tkdGo .btn{flex:1;font-size:15px;padding:12px 6px}   /* TK_V1.0.82 */
+.tkdSyncL{display:flex;gap:8px;align-items:center;margin:10px 2px 0;font-size:13.5px}.tkdSyncL input{width:20px;height:20px}   /* TK_V1.0.82 */
 .igck{margin-top:12px;border:1px solid var(--line2);border-radius:12px;padding:8px 12px}.igck summary{cursor:pointer;font-weight:700;font-size:14px}.igck summary small{font-weight:400;opacity:.7}.igckB{font-size:13px;line-height:1.6}.igckB ol{padding-left:20px;margin:6px 0}.igckB input{width:100%;box-sizing:border-box;padding:9px 10px;border-radius:9px;border:1px solid var(--line2);background:transparent;color:inherit;margin:6px 0}.igckR{display:flex;gap:8px}.igckR .btn{flex:1}   /* TK_V1.0.80 */
 .igdA textarea{width:100%;min-height:84px;box-sizing:border-box;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--text);padding:10px;font-size:15px}.igdA .btn{margin-top:8px;width:100%}#igm{display:none;margin-top:8px;padding:8px 10px;border-radius:10px;font-size:13.5px;background:var(--card);border:1px solid var(--line)}#igm.err{border-color:var(--red)}#igm.ok{border-color:var(--green)}.igdDir{font-size:12px;color:var(--sub);margin-top:8px;display:flex;gap:8px;align-items:center}.igdDir button{font-size:12px;padding:3px 8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--sub)}
 #totop{position:fixed;right:12px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:9600;width:42px;height:42px;border-radius:50%;border:1px solid var(--line2);background:var(--panel);color:var(--strong);font-size:18px;font-weight:800;box-shadow:0 4px 14px rgba(0,0,0,.35);display:none;cursor:pointer}#totop.on{display:block}
@@ -461,6 +461,13 @@ function tabs(){$('#tabs').innerHTML=TABS.map(([k,n,_f,c])=>`<button data-t="${k
   $$('#tabs button').forEach(b=>b.onclick=()=>{CUR=b.dataset.t;LS.set('tab',CUR);tabs();show();scrollTo(0,0)});hh();if(typeof cuBadge==='function'&&CUI)cuBadge()}
 // V0.3.70 歷史紀錄／IG 很長時，右下角出現 ⬆ 回到最上面
 addEventListener('scroll',()=>{const b=document.getElementById('totop');if(b)b.classList.toggle('on',scrollY>1400&&(CUR==='hist'||CUR==='ig'))},{passive:true});
+// 流程參數的輸入框（生圖頁、比較頁共用）
+function pInp(it,O,k){const v=it.id in O?O[it.id]:(it.type==='seed'?'':it.value),a=`${k}="${esc(it.id)}" data-t="${it.type}"`,num=it.type==='int'||it.type==='float'||it.type==='seed';
+  if(it.type==='choice')return `<select ${a}>${it.choices.map(c=>`<option ${String(c)===String(v)?'selected':''}>${esc(c)}</option>`).join('')}</select>`;
+  if(it.presets)return `<select ${a}>${[...new Set([...it.presets,+v])].sort((x,y)=>x-y).map(c=>`<option value="${c}" ${+c===+v?'selected':''}>${c}${c===it.value?' ✓':''}</option>`).join('')}</select>`;
+  if(it.type==='bool')return `<input type="checkbox" ${a} ${v?'checked':''}>`;
+  if(num)return `<input type="number" inputmode="decimal" ${a} value="${esc(v)}" ${it.type==='seed'?'placeholder="隨機"':''} ${it.min!=null?`min="${it.min}"`:''} ${it.max!=null?`max="${it.max}"`:''} step="${it.step||(it.type==='float'?'any':1)}">`;
+  return `<input ${a} value="${esc(v)}">`}
 function show(){clearInterval(TIMER);if(CUR!=='hist'){HSEL=null;const b=$('#hsb');if(b)b.remove()}const t=TABS.find(x=>x[0]===CUR)||TABS[0];t[2]();TIMER=setInterval(()=>{if(!document.hidden)t[2](true)},2000)}
 
 // ================= 🎨 生圖：選照片 → 打提示詞 → （調參數）→ 開始；電腦上的 ComfyUI 跑完結果自動出現在下面
@@ -657,12 +664,7 @@ const PK=()=>'gpar:'+$('#gw').value;
 async function gParams(){const box=$('#gpar');box.innerHTML='<div class="mu">讀取參數中…</div>';const wf=$('#gw').value;if(!wf){box.innerHTML='';return}
   const r=await api(U('/api/gen_params',{wf}));if($('#gw').value!==wf)return;if(!r.ok){box.innerHTML=`<div class="mu">${esc(r.message||'讀不到參數')}</div>`;return}
   GDEF=r.groups||[];const O=LS.get(PK(),{});GDEF.forEach(g=>g.items.forEach(it=>{if(it.id in O&&String(O[it.id])===String(it.type==='seed'?'':it.value))delete O[it.id]}));LS.set(PK(),O);const GOK=BIG.some(b=>b[0]===wf)||gModeOf(wf)?'gopenB':'gopen',OPEN=LS.get(GOK,{});   // 定案的兩個流程：參數預設收起來（有畫質三段就夠），自己打開會記住
-  const inp=it=>{const v=it.id in O?O[it.id]:(it.type==='seed'?'':it.value);const a=`data-p="${esc(it.id)}" data-t="${it.type}"`;
-    if(it.type==='choice')return `<select ${a}>${it.choices.map(c=>`<option ${String(c)===String(v)?'selected':''}>${esc(c)}</option>`).join('')}</select>`;
-    if(it.presets)return `<select ${a}>${[...new Set([...it.presets,+v])].sort((x,y)=>x-y).map(c=>`<option value="${c}" ${+c===+v?'selected':''}>${c}${c===it.value?' ✓':''}</option>`).join('')}</select>`;
-    if(it.type==='bool')return `<input type="checkbox" ${a} ${v?'checked':''}>`;
-    if(it.type==='int'||it.type==='float'||it.type==='seed')return `<input type="number" inputmode="decimal" ${a} value="${esc(v)}" ${it.type==='seed'?'placeholder="隨機"':''} ${it.min!=null?`min="${it.min}"`:''} ${it.max!=null?`max="${it.max}"`:''} step="${it.step||(it.type==='int'||it.type==='seed'?1:'any')}">`;
-    return `<input ${a} value="${esc(v)}">`};
+  const inp=it=>pInp(it,O,'data-p');
   // 一格一個參數、能擠就擠：短的一列放好幾個，名字很長的（模型檔名）佔兩格或整列
   const wid=it=>{const L=it.type==='choice'?Math.max(...it.choices.map(c=>String(c).length),0):it.type==='str'?String(it.value||'').length+6:0;return L>26?' wf':L>11?' w2':''};
   const short=t=>String(t).replace(/（[^）]*）/g,'').replace(/\([^)]*\)/g,'').trim()||t;
@@ -1105,12 +1107,7 @@ function cRows(){const box=$('#crows');if(!box)return;const open=new Set($$('#cr
 async function cPar(key,wf){wf=wf||key;const box=$(`#crows .cpar[data-cp="${CSS.escape(key)}"]`);if(!box||box.dataset.ok)return;const r=await api(U('/api/gen_params',{wf}));if(!r.ok){box.innerHTML=`<div class="mu">${esc(r.message||'讀不到參數（流程還沒做好？）')}</div>`;return}
   const K='gpar:'+wf,O=LS.get(K,{});box.dataset.ok=1;
   const G=(r.groups||[]).filter(g=>g.g==='常用'||g.g==='模型／LoRA');
-  const inp=it=>{const v=it.id in O?O[it.id]:(it.type==='seed'?'':it.value);const a=`data-cpp="${esc(it.id)}" data-t="${it.type}"`;
-    if(it.type==='choice')return `<select ${a}>${it.choices.map(c=>`<option ${String(c)===String(v)?'selected':''}>${esc(c)}</option>`).join('')}</select>`;
-    if(it.presets)return `<select ${a}>${[...new Set([...it.presets,+v])].sort((x,y)=>x-y).map(c=>`<option value="${c}" ${+c===+v?'selected':''}>${c}${c===it.value?' ✓':''}</option>`).join('')}</select>`;
-    if(it.type==='bool')return `<input type="checkbox" ${a} ${v?'checked':''}>`;
-    if(it.type==='int'||it.type==='float'||it.type==='seed')return `<input type="number" inputmode="decimal" ${a} value="${esc(v)}" ${it.type==='seed'?'placeholder="隨機"':''} step="${it.step||(it.type==='int'||it.type==='seed'?1:'any')}">`;
-    return `<input ${a} value="${esc(v)}">`};
+  const inp=it=>pInp(it,O,'data-cpp');
   const short=t=>String(t).replace(/（[^）]*）/g,'').replace(/\([^)]*\)/g,'').trim()||t;
   box.innerHTML=G.map(g=>`<div class="mu" style="font-weight:700;margin:6px 0 2px">${esc(g.g)}</div><div class="pgrid">${g.items.filter(it=>it.type!=='seed').map(it=>it.type==='bool'?`<label class="pc b">${inp(it)}<span>${esc(short(it.label))}</span></label>`:`<div class="pc${(it.type==='choice'&&Math.max(...it.choices.map(c=>String(c).length))>22)?' wf':''}"><label>${esc(short(it.label))}</label>${inp(it)}</div>`).join('')}</div>`).join('')
     +`<div class="row" style="margin-top:6px"><span class="grow mu">${Object.keys(O).length?`改了 ${Object.keys(O).length} 項（跟生圖頁共用）`:'流程本來的設定（跟生圖頁共用）'}</span><button class="pill" data-cpr="${esc(wf)}">↺ 還原</button></div>`;

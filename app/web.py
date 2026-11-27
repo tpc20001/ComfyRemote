@@ -138,7 +138,7 @@ def jresp(obj, code=200, headers=None):
     return Resp(code, json.dumps(obj, ensure_ascii=False, default=str).encode('utf-8'), headers=headers)
 
 
-REASON = {200: 'OK', 206: 'Partial Content', 416: 'Range Not Satisfiable', 400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 413: 'Payload Too Large', 429: 'Too Many Requests', 500: 'Internal Server Error'}
+REASON = {200: 'OK', 206: 'Partial Content', 304: 'Not Modified', 416: 'Range Not Satisfiable', 400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden', 404: 'Not Found', 413: 'Payload Too Large', 429: 'Too Many Requests', 500: 'Internal Server Error'}
 
 
 class WebServer:
@@ -282,21 +282,23 @@ class WebServer:
               ) % (self.brand.get('id', 'app'), self.version)
         return Resp(200, js.encode('utf-8'), 'application/javascript; charset=utf-8', {'Service-Worker-Allowed': '/'})
 
-    def page(self):
-        import webpage
-        html = webpage.PAGE.replace('__VER__', str(self.version)).replace('__NAME__', str(self.brand.get('name'))).replace('__TITLE__', str(self.brand.get('title'))).replace('__ACCENT__', str(self.brand.get('accent', '#e51e63'))).replace('__PREFIX__', str(self.brand.get('prefix', 'CR')))
-        return Resp(200, html.encode('utf-8'), 'text/html; charset=utf-8')
+    def page(self, req=None):
+        """手機頁：組好、壓縮好的結果記起來（版本或熱更新換了頁面才重做）；帶 ETag，沒變就回 304，重新整理不用再下載 70KB."""
+        import webpage, gzip, hashlib
+        k = (id(webpage.PAGE), self.version, json.dumps(self.brand, sort_keys=True, default=str))
+        c = getattr(self, '_pgc', None)
+        if not c or c[0] != k:
+            b = self.brand; html = webpage.PAGE
+            for a, v in (('__VER__', self.version), ('__NAME__', b.get('name')), ('__TITLE__', b.get('title')), ('__ACCENT__', b.get('accent', '#e51e63')), ('__PREFIX__', b.get('prefix', 'CR'))): html = html.replace(a, str(v))
+            raw = html.encode('utf-8'); c = self._pgc = (k, raw, gzip.compress(raw, 6), '"' + hashlib.sha1(raw).hexdigest()[:16] + '"')
+        H = {'ETag': c[3], 'Cache-Control': 'no-cache', 'Vary': 'Accept-Encoding'}
+        if req is not None and (req.headers.get('if-none-match') or '') == c[3]: return Resp(304, b'', 'text/html; charset=utf-8', H)
+        if req is not None and 'gzip' in (req.headers.get('accept-encoding') or ''): return Resp(200, c[2], 'text/html; charset=utf-8', {**H, 'Content-Encoding': 'gzip'})
+        return Resp(200, c[1], 'text/html; charset=utf-8', H)
 
     def route(self, req):
         p = req.path
-        if p in ('/', '/index.html'):
-            r = self.page()
-            if 'gzip' in (req.headers.get('accept-encoding') or ''):        # V0.2.99 頁面壓縮：300KB → 約 70KB，手機用 Tailscale 打開快很多
-                import gzip as _gz
-                k = (len(r.body), hash(r.body)); c = getattr(self, '_gzc', None)
-                if not c or c[0] != k: c = (k, _gz.compress(r.body, 6)); self._gzc = c
-                r = Resp(200, c[1], r.ctype, {'Content-Encoding': 'gzip', 'Vary': 'Accept-Encoding'})
-            return r
+        if p in ('/', '/index.html'): return self.page(req)
         if p == '/manifest.webmanifest': return self.manifest()
         if p == '/sw.js': return self.sw()
         if p in ('/icon-192.png', '/icon-512.png', '/favicon.ico'): return self.icon(512 if '512' in p else 192)
@@ -472,7 +474,7 @@ class WebServer:
 
     def api_gen(self, req):
         """狀態：ComfyUI 連線、工作清單；full=1 再加流程清單和設定."""
-        E = self.E(); out = {'ok': True, 'comfy': E.comfy_status(), 'jobs': E.gen_jobs(int(req.q('n', '20') or 20)), 'info': E.info(), 'paused': E.bg_hold('gen'),
+        E = self.E(); out = {'ok': True, 'comfy': E.comfy_status_bg(), 'jobs': E.gen_jobs(int(req.q('n', '20') or 20)), 'info': E.info(), 'paused': E.bg_hold('gen'),
                              'now': time.time(), 'wait': getattr(E, 'gen_wait', ''), 'wait_t': getattr(E, 'gen_wait_t', 0), 'cexe': E.comfy_can(), 'cauto': bool(E.cfg.get('comfy_autostart')), 'crh': E.cfg.get('comfy_restart_h'), 'crs': bool(getattr(E, '_comfy_rs_busy', False)), 'qsum': E.gen_qsum()}
         if req.q('full'): out.update(wfs=E.gen_workflows(), wf=E.cfg.get('gen_wf'), mp=E.cfg.get('gen_mp'), spd={k: round(v[0]) for k, v in E._wf_speed().items()}, stars={r[0]: [round(r[1], 1), r[2]] for r in E.db.q('SELECT wf, AVG(vote), COUNT(*) FROM gen_jobs WHERE vote>0 AND deleted=0 GROUP BY wf')}, lineup={n: {'steps': st, 'lic': lic, 'note': note} for n, _t, st, lic, note in E.LINEUP})
         return jresp(out)
